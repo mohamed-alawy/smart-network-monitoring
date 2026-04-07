@@ -1,0 +1,15 @@
+.env
+.claude/
+data/raw/
+data/processed/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+*.egg-info/
+dist/
+build/
+mlruns/
+modules/rag/evaluation/ragas_results.json
+modules/rag/evaluation/sme_review.csv
