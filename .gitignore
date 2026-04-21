@@ -13,3 +13,4 @@ build/
 mlruns/
 modules/rag/evaluation/ragas_results.json
 modules/rag/evaluation/sme_review.csv
+.worktrees/
