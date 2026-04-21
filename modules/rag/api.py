@@ -1,6 +1,6 @@
 """
 FastAPI endpoint for the RAG Troubleshooting Module.
-POST /query — accepts anomaly events or free-text questions.
+POST /query — accepts network alert events or free-text questions.
 POST /ingest — trigger document ingestion (PDFs + CSV).
 GET  /health — service health check.
 """
@@ -14,7 +14,7 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError
 from loguru import logger
 from dotenv import load_dotenv
 
@@ -44,24 +44,58 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="RAG Troubleshooting API",
-    description="Network anomaly troubleshooting via 3GPP spec RAG retrieval",
+    description="Network alert troubleshooting via 3GPP spec RAG retrieval",
     version="1.0.0",
     lifespan=lifespan,
 )
 
-class AnomalyQueryRequest(BaseModel):
-    """Schema from Person 3&4 anomaly detection module."""
-    anomaly: int = Field(..., description="1 = anomaly detected, 0 = normal")
-    severity: str = Field(..., description="Low | Medium | High | Critical")
-    root_cause: str = Field(..., description="e.g. DDoS, hardware_failure, config_error, traffic_spike")
-    reason: List[str] = Field(..., description="List of triggering KPI names")
+class AlertQueryRequest(BaseModel):
+    """Alert payload schema from the new anomaly source."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    timestamp: int = Field(
+        ...,
+        validation_alias=AliasChoices("Timestamp", "timestamp"),
+        description="Alert timestamp in epoch milliseconds",
+    )
+    location: str = Field(
+        ...,
+        validation_alias=AliasChoices("Location", "location"),
+        description="Geographic location or site affected",
+    )
+    root_cause: str = Field(
+        ...,
+        validation_alias=AliasChoices("Root Cause", "root_cause"),
+        description="Predicted cause label, e.g. Congestion",
+    )
+    severity: str = Field(
+        ...,
+        validation_alias=AliasChoices("Severity", "severity"),
+        description="LOW | MEDIUM | HIGH | CRITICAL",
+    )
+    symptoms: str | List[str] = Field(
+        ...,
+        validation_alias=AliasChoices("Symptoms", "symptoms"),
+        description="Comma-separated symptoms or list of symptom strings",
+    )
+
+    def normalized_symptoms(self) -> List[str]:
+        if isinstance(self.symptoms, str):
+            return [part.strip() for part in self.symptoms.split(",") if part.strip()]
+        return [part.strip() for part in self.symptoms if part and part.strip()]
 
 class GeneralQueryRequest(BaseModel):
     """Free-text troubleshooting question from a network engineer."""
     query: str = Field(..., min_length=5, description="Natural language question")
 
-class TroubleshootingResponse(BaseModel):
-    """Structured troubleshooting response sent to Person 6 / caller."""
+class AlertTroubleshootingResponse(BaseModel):
+    """Structured troubleshooting response for the new alert payload."""
+    timestamp: int
+    location: str
+    root_cause: str
+    severity: str
+    symptoms: List[str]
     cause_explanation: str
     priority: str
     estimated_resolution_time: str
@@ -147,20 +181,20 @@ async def collection_stats():
 
 # ── Main query endpoint ───────────────────────────────────────────────────────
 
-@app.post("/query", response_model=TroubleshootingResponse)
-async def query(request: AnomalyQueryRequest):
+@app.post("/query", response_model=AlertTroubleshootingResponse)
+async def query(request: AlertQueryRequest):
     """
     Primary endpoint called by Person 6 orchestrator.
-    Accepts anomaly event, returns structured troubleshooting response.
+    Accepts alert event, returns structured troubleshooting response.
     """
-    if request.anomaly != 1:
-        raise HTTPException(status_code=400, detail="anomaly field must be 1 to trigger analysis")
+    symptoms = request.normalized_symptoms()
 
     inputs = {
-        "anomaly": request.anomaly,
+        "timestamp": request.timestamp,
+        "location": request.location,
         "severity": request.severity,
         "root_cause": request.root_cause,
-        "reason": request.reason,
+        "symptoms": symptoms,
     }
 
     chain = get_chain()
@@ -175,10 +209,22 @@ async def query(request: AnomalyQueryRequest):
         # Strip markdown code fences if present
         clean = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         parsed = json.loads(clean)
-        return TroubleshootingResponse(**parsed)
-    except (json.JSONDecodeError, TypeError) as e:
+        return AlertTroubleshootingResponse(
+            timestamp=request.timestamp,
+            location=request.location,
+            root_cause=request.root_cause,
+            severity=request.severity,
+            symptoms=symptoms,
+            **parsed,
+        )
+    except (json.JSONDecodeError, TypeError, ValidationError) as e:
         logger.warning(f"Could not parse LLM JSON output: {e} — returning raw")
-        return TroubleshootingResponse(
+        return AlertTroubleshootingResponse(
+            timestamp=request.timestamp,
+            location=request.location,
+            root_cause=request.root_cause,
+            severity=request.severity,
+            symptoms=symptoms,
             cause_explanation="Could not parse structured response.",
             priority=request.severity.lower(),
             estimated_resolution_time="Unknown",

@@ -2,15 +2,14 @@
 LangChain LCEL RAG chain with RunnableBranch routing.
 
 Query types:
-  - anomaly_query: input is a structured anomaly event (from Person 3&4)
+    - alert_query: input is a structured network alert event
   - general_query: free-text troubleshooting question from engineer
 
 Both routes retrieve from Weaviate and pass context to the LLM.
 """
 
-import json
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableBranch, RunnableLambda, RunnablePassthrough
+from langchain_core.runnables import RunnableBranch, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 
 from modules.rag.vector_store.retriever import hybrid_search
@@ -18,9 +17,9 @@ from modules.rag.chain.llm_provider import get_llm
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
-ANOMALY_PROMPT = ChatPromptTemplate.from_messages([
+ALERT_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are a senior telecom network engineer AI assistant.
-You analyze network anomaly events and provide structured troubleshooting guidance.
+You analyze network alert events and provide structured troubleshooting guidance.
 
 Use ONLY the provided context from 3GPP specifications and telecom documentation.
 If the context does not cover the issue, say so clearly.
@@ -28,15 +27,16 @@ If the context does not cover the issue, say so clearly.
 Context from knowledge base:
 {context}
 """),
-    ("human", """Anomaly Event:
-- Anomaly Detected: {anomaly}
+    ("human", """Alert Event:
+- Timestamp (epoch ms): {timestamp}
+- Location: {location}
 - Severity: {severity}
 - Root Cause: {root_cause}
-- Triggering KPIs: {reason}
+- Symptoms: {symptoms}
 
 Provide a structured response in the following JSON format:
 {{
-  "cause_explanation": "Technical explanation of why this anomaly is occurring",
+    "cause_explanation": "Technical explanation of why this alert condition is occurring",
   "priority": "critical | high | medium | low",
   "estimated_resolution_time": "e.g. 2-4 hours",
   "suggested_solution": [
@@ -75,10 +75,22 @@ def _format_docs(docs) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def _retrieve_for_anomaly(inputs: dict) -> dict:
-    query = f"{inputs.get('root_cause', '')} {' '.join(inputs.get('reason', []))} network fault"
+def _retrieve_for_alert(inputs: dict) -> dict:
+    symptoms = inputs.get("symptoms", [])
+    if isinstance(symptoms, str):
+        symptoms = [part.strip() for part in symptoms.split(",") if part.strip()]
+
+    query = " ".join([
+        str(inputs.get("root_cause", "")),
+        " ".join(symptoms),
+        str(inputs.get("severity", "")),
+        str(inputs.get("location", "")),
+        "telecom network fault",
+    ]).strip()
+
     docs = hybrid_search(query)
     inputs["context"] = _format_docs(docs)
+    inputs["symptoms"] = symptoms
     return inputs
 
 
@@ -90,9 +102,10 @@ def _retrieve_for_general(inputs: dict) -> dict:
 
 # ── Route classifier ──────────────────────────────────────────────────────────
 
-def _is_anomaly_input(inputs: dict) -> bool:
-    """True if input follows the anomaly event schema from Person 3&4."""
-    return "anomaly" in inputs and "root_cause" in inputs
+def _is_alert_input(inputs: dict) -> bool:
+    """True if input follows the network alert event schema."""
+    required = ("timestamp", "location", "severity", "root_cause", "symptoms")
+    return all(field in inputs for field in required)
 
 
 # ── Chain assembly ────────────────────────────────────────────────────────────
@@ -100,9 +113,9 @@ def _is_anomaly_input(inputs: dict) -> bool:
 def build_rag_chain():
     llm = get_llm()
 
-    anomaly_chain = (
-        RunnableLambda(_retrieve_for_anomaly)
-        | ANOMALY_PROMPT
+    alert_chain = (
+        RunnableLambda(_retrieve_for_alert)
+        | ALERT_PROMPT
         | llm
         | StrOutputParser()
     )
@@ -115,7 +128,7 @@ def build_rag_chain():
     )
 
     chain = RunnableBranch(
-        (_is_anomaly_input, anomaly_chain),
+        (_is_alert_input, alert_chain),
         general_chain,  # default branch
     )
 
