@@ -51,6 +51,10 @@ def send_notification(req: NotificationRequest) -> NotificationResponse:
 
     for recipient in recipients:
         to = _EMAIL_MAP[recipient]()
+        if not to:
+            logger.warning(f"No email configured for {recipient}, skipping")
+            errors.append(f"{recipient} email not configured")
+            continue
         subject = _SUBJECT_MAP[recipient]
         body = messages[recipient]
         err = send_email(to, subject, body)

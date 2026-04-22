@@ -41,6 +41,7 @@ def test_send_notification_medium_severity_only_call_center():
             resp = client.post("/notifications/send", json=payload)
     assert resp.status_code == 200
     data = resp.json()
+    assert data["status"] == "success"
     assert data["recipients_notified"] == ["call_center"]
 
 
@@ -55,8 +56,11 @@ def test_send_notification_low_severity_no_recipients():
 
 
 def test_send_notification_partial_failure():
+    call_count = {"n": 0}
+
     def fake_send(to, subject, body):
-        if "client" in to:
+        call_count["n"] += 1
+        if call_count["n"] == 3:  # third call is client
             return "connection refused"
         return None
 
@@ -65,7 +69,7 @@ def test_send_notification_partial_failure():
             "NOTIFICATION_LLM_MODE": "template",
             "ENGINEER_EMAIL": "eng@test.com",
             "CALL_CENTER_EMAIL": "cc@test.com",
-            "CLIENT_EMAIL": "client@test.com",
+            "CLIENT_EMAIL": "support@test.com",  # no "client" in address
         }):
             resp = client.post("/notifications/send", json=PAYLOAD)
     assert resp.status_code == 200
