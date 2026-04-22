@@ -27,7 +27,11 @@ def get_llm():
 
 
 def get_recipients(priority: str) -> list[str]:
-    return _RECIPIENT_MAP.get(priority.lower(), [])
+    result = _RECIPIENT_MAP.get(priority.lower())
+    if result is None:
+        logger.warning(f"Unknown priority '{priority}', no recipients will be notified")
+        return []
+    return result
 
 
 def _llm_client_message(location: str, rag: dict) -> str:

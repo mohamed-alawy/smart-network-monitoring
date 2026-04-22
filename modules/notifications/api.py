@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI
 from pydantic import BaseModel
 from loguru import logger
+from typing import Literal
 from modules.notifications.generator import get_recipients, generate_messages
 from modules.notifications.sender import send_email
 
@@ -22,7 +23,7 @@ _SUBJECT_MAP = {
 
 class RagOutput(BaseModel):
     cause_explanation: str
-    priority: str
+    priority: Literal["critical", "high", "medium", "low"]
     estimated_resolution_time: str
     suggested_solution: list[str]
     affected_standards: list[str] = []
@@ -37,7 +38,7 @@ class NotificationRequest(BaseModel):
 
 class NotificationResponse(BaseModel):
     recipients_notified: list[str]
-    status: str
+    status: Literal["success", "partial", "failed"]
     errors: list[str]
 
 
