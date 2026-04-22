@@ -1,25 +1,29 @@
-def engineer_message(p: dict) -> str:
+def engineer_message(location: str, rag: dict) -> str:
+    steps = "\n".join(f"  {s}" for s in rag.get("suggested_solution", []))
+    standards = ", ".join(rag.get("affected_standards", []))
     return (
-        f"ALERT: {p['issue']}\n"
-        f"Region: {p['region']}\n"
-        f"Severity: {p['severity']}\n"
-        f"ETA: {p['eta']} min\n"
-        f"Action: {p['action']}\n"
-        f"Root Cause: {p['root_cause']}"
+        f"ALERT - {location}\n"
+        f"Priority: {rag['priority']}\n"
+        f"Cause: {rag['cause_explanation']}\n"
+        f"ETA: {rag['estimated_resolution_time']}\n"
+        f"Escalation needed: {rag['escalation_needed']}\n"
+        f"\nSuggested Steps:\n{steps}\n"
+        f"\nStandards: {standards}\n"
+        f"Notes: {rag.get('additional_notes', '')}"
     )
 
 
-def call_center_message(p: dict) -> str:
+def call_center_message(location: str, rag: dict) -> str:
     return (
-        f"Issue in {p['region']}\n"
-        f"Type: {p['issue']}\n"
-        f"ETA: {p['eta']} min"
+        f"Network issue in {location}\n"
+        f"Priority: {rag['priority']}\n"
+        f"Expected resolution: {rag['estimated_resolution_time']}"
     )
 
 
-def client_message_template(p: dict) -> str:
+def client_message_template(location: str, rag: dict) -> str:
     return (
-        f"We are currently experiencing a temporary issue in {p['region']}. "
-        f"Our team is working to resolve it within {p['eta']} minutes. "
-        f"We apologize for any inconvenience."
+        f"We are experiencing a temporary service disruption in {location}. "
+        f"Our team expects to resolve it within {rag['estimated_resolution_time']}. "
+        f"We apologize for the inconvenience."
     )

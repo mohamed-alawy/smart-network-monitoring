@@ -2,14 +2,20 @@ import os
 from unittest.mock import patch, MagicMock
 from modules.notifications.generator import generate_messages, get_recipients
 
-PAYLOAD = {
-    "issue": "Network Congestion",
-    "severity": "high",
-    "region": "Nasr City",
-    "eta": 20,
-    "action": "Reduce load",
-    "root_cause": "traffic_spike",
+LOCATION = "Nasr City"
+RAG = {
+    "cause_explanation": "DDoS attack.",
+    "priority": "critical",
+    "estimated_resolution_time": "2-4 hours",
+    "suggested_solution": ["Step 1: Mitigate.", "Step 2: Block."],
+    "affected_standards": ["TS 28.552"],
+    "escalation_needed": True,
+    "additional_notes": "Monitor continuously.",
 }
+
+
+def test_get_recipients_critical():
+    assert get_recipients("critical") == ["engineer", "call_center", "client"]
 
 
 def test_get_recipients_high():
@@ -26,21 +32,22 @@ def test_get_recipients_low():
 
 def test_generate_messages_template_mode():
     with patch.dict(os.environ, {"NOTIFICATION_LLM_MODE": "template"}):
-        msgs = generate_messages(PAYLOAD, ["engineer", "call_center", "client"])
+        msgs = generate_messages(LOCATION, RAG, ["engineer", "call_center", "client"])
     assert "engineer" in msgs
     assert "call_center" in msgs
     assert "client" in msgs
-    assert "traffic_spike" in msgs["engineer"]
+    assert "DDoS" in msgs["engineer"]
+    assert "Nasr City" in msgs["call_center"]
 
 
-def test_generate_messages_hybrid_client_differs():
+def test_generate_messages_hybrid_client_uses_llm():
     mock_llm = MagicMock()
     mock_llm.invoke.return_value.content = "LLM-generated apology"
     with patch.dict(os.environ, {"NOTIFICATION_LLM_MODE": "hybrid"}):
         with patch("modules.notifications.generator.get_llm", return_value=mock_llm):
-            msgs = generate_messages(PAYLOAD, ["engineer", "call_center", "client"])
+            msgs = generate_messages(LOCATION, RAG, ["engineer", "call_center", "client"])
     assert msgs["client"] == "LLM-generated apology"
-    assert "traffic_spike" in msgs["engineer"]
+    assert "DDoS" in msgs["engineer"]
 
 
 def test_generate_messages_hybrid_llm_failure_falls_back_to_template():
@@ -48,5 +55,6 @@ def test_generate_messages_hybrid_llm_failure_falls_back_to_template():
     mock_llm.invoke.side_effect = Exception("LLM unavailable")
     with patch.dict(os.environ, {"NOTIFICATION_LLM_MODE": "hybrid"}):
         with patch("modules.notifications.generator.get_llm", return_value=mock_llm):
-            msgs = generate_messages(PAYLOAD, ["client"])
-    assert "20" in msgs["client"]
+            msgs = generate_messages(LOCATION, RAG, ["client"])
+    assert "Nasr City" in msgs["client"]
+    assert "2-4 hours" in msgs["client"]

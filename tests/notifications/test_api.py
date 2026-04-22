@@ -6,22 +6,26 @@ from modules.notifications.api import app
 client = TestClient(app)
 
 PAYLOAD = {
-    "issue": "Network Congestion",
-    "severity": "high",
-    "region": "Nasr City",
-    "eta": 20,
-    "action": "Reduce load",
-    "root_cause": "traffic_spike",
+    "location": "Nasr City",
+    "rag_output": {
+        "cause_explanation": "DDoS attack overwhelming the network.",
+        "priority": "critical",
+        "estimated_resolution_time": "2-4 hours",
+        "suggested_solution": ["Step 1: Activate mitigation.", "Step 2: Block sources."],
+        "affected_standards": ["TS 28.552 Section 5.8"],
+        "escalation_needed": True,
+        "additional_notes": "Monitor N3IWF continuously.",
+    },
 }
 
 
-def test_send_notification_high_severity_success():
+def test_send_notification_critical_priority_success():
     with patch("modules.notifications.api.send_email", return_value=None):
         with patch.dict(os.environ, {
             "NOTIFICATION_LLM_MODE": "template",
             "ENGINEER_EMAIL": "eng@test.com",
             "CALL_CENTER_EMAIL": "cc@test.com",
-            "CLIENT_EMAIL": "client@test.com",
+            "CLIENT_EMAIL": "support@test.com",
         }):
             resp = client.post("/notifications/send", json=PAYLOAD)
     assert resp.status_code == 200
@@ -31,8 +35,8 @@ def test_send_notification_high_severity_success():
     assert data["errors"] == []
 
 
-def test_send_notification_medium_severity_only_call_center():
-    payload = {**PAYLOAD, "severity": "medium"}
+def test_send_notification_medium_priority_only_call_center():
+    payload = {**PAYLOAD, "rag_output": {**PAYLOAD["rag_output"], "priority": "medium"}}
     with patch("modules.notifications.api.send_email", return_value=None):
         with patch.dict(os.environ, {
             "NOTIFICATION_LLM_MODE": "template",
@@ -41,12 +45,12 @@ def test_send_notification_medium_severity_only_call_center():
             resp = client.post("/notifications/send", json=payload)
     assert resp.status_code == 200
     data = resp.json()
-    assert data["status"] == "success"
     assert data["recipients_notified"] == ["call_center"]
+    assert data["status"] == "success"
 
 
-def test_send_notification_low_severity_no_recipients():
-    payload = {**PAYLOAD, "severity": "low"}
+def test_send_notification_low_priority_no_recipients():
+    payload = {**PAYLOAD, "rag_output": {**PAYLOAD["rag_output"], "priority": "low"}}
     with patch("modules.notifications.api.send_email", return_value=None):
         resp = client.post("/notifications/send", json=payload)
     assert resp.status_code == 200
@@ -60,7 +64,7 @@ def test_send_notification_partial_failure():
 
     def fake_send(to, subject, body):
         call_count["n"] += 1
-        if call_count["n"] == 3:  # third call is client
+        if call_count["n"] == 3:
             return "connection refused"
         return None
 
@@ -69,7 +73,7 @@ def test_send_notification_partial_failure():
             "NOTIFICATION_LLM_MODE": "template",
             "ENGINEER_EMAIL": "eng@test.com",
             "CALL_CENTER_EMAIL": "cc@test.com",
-            "CLIENT_EMAIL": "support@test.com",  # no "client" in address
+            "CLIENT_EMAIL": "support@test.com",
         }):
             resp = client.post("/notifications/send", json=PAYLOAD)
     assert resp.status_code == 200
@@ -79,5 +83,5 @@ def test_send_notification_partial_failure():
 
 
 def test_send_notification_invalid_payload_422():
-    resp = client.post("/notifications/send", json={"severity": "high"})
+    resp = client.post("/notifications/send", json={"location": "Cairo"})
     assert resp.status_code == 422

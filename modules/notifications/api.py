@@ -1,9 +1,7 @@
 import os
-
 from fastapi import FastAPI
 from pydantic import BaseModel
 from loguru import logger
-
 from modules.notifications.generator import get_recipients, generate_messages
 from modules.notifications.sender import send_email
 
@@ -22,13 +20,19 @@ _SUBJECT_MAP = {
 }
 
 
+class RagOutput(BaseModel):
+    cause_explanation: str
+    priority: str
+    estimated_resolution_time: str
+    suggested_solution: list[str]
+    affected_standards: list[str] = []
+    escalation_needed: bool = False
+    additional_notes: str = ""
+
+
 class NotificationRequest(BaseModel):
-    issue: str
-    severity: str
-    region: str
-    eta: int
-    action: str
-    root_cause: str
+    location: str
+    rag_output: RagOutput
 
 
 class NotificationResponse(BaseModel):
@@ -39,14 +43,14 @@ class NotificationResponse(BaseModel):
 
 @app.post("/notifications/send", response_model=NotificationResponse)
 def send_notification(req: NotificationRequest) -> NotificationResponse:
-    payload = req.model_dump()
-    recipients = get_recipients(req.severity)
+    rag = req.rag_output.model_dump()
+    recipients = get_recipients(req.rag_output.priority)
 
     if not recipients:
-        logger.info(f"No recipients for severity={req.severity}")
+        logger.info(f"No recipients for priority={req.rag_output.priority}")
         return NotificationResponse(recipients_notified=[], status="success", errors=[])
 
-    messages = generate_messages(payload, recipients)
+    messages = generate_messages(req.location, rag, recipients)
     notified, errors = [], []
 
     for recipient in recipients:
