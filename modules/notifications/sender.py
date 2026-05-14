@@ -3,27 +3,31 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from dotenv import load_dotenv
 from loguru import logger
-
-load_dotenv()
-
-_SENDER = os.getenv("SMTP_SENDER", "")
-_PASSWORD = os.getenv("SMTP_APP_PASSWORD", "")
 
 
 def send_email(to: str, subject: str, body: str) -> str | None:
     """Send email via Gmail SMTP. Returns None on success, error string on failure."""
+    sender   = os.getenv("SMTP_SENDER", "").strip()
+    password = os.getenv("SMTP_APP_PASSWORD", "").strip()
+
+    if not sender or not password:
+        err = "SMTP_SENDER or SMTP_APP_PASSWORD not configured"
+        logger.error(err)
+        return err
+
     msg = MIMEMultipart()
-    msg["From"] = _SENDER
-    msg["To"] = to
+    msg["From"]    = sender
+    msg["To"]      = to
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "plain"))
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.ehlo()
             server.starttls()
-            server.login(_SENDER, _PASSWORD)
+            server.ehlo()
+            server.login(sender, password)
             server.send_message(msg)
         logger.info(f"Email sent to {to} | subject: {subject}")
         return None

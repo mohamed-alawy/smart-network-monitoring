@@ -175,6 +175,19 @@ async def update_config(data: dict):
     return {"updated": updated}
 
 
+@app.post("/test-email")
+async def test_email():
+    """يبعت test email للـ SMTP_SENDER نفسه للتأكد إن الـ SMTP شغال."""
+    from modules.notifications.sender import send_email
+    to = os.getenv("SMTP_SENDER", "").strip()
+    if not to:
+        raise HTTPException(status_code=400, detail="SMTP_SENDER not configured in .env")
+    err = send_email(to, "NetPulse — Test Email", "SMTP connection is working correctly.")
+    if err:
+        raise HTTPException(status_code=500, detail=err)
+    return {"status": "sent", "to": to}
+
+
 # ── Notification helper ───────────────────────────────────────────────────────
 
 def _fire_notifications(location: str, rag: dict) -> NotificationResult:

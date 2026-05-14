@@ -403,14 +403,28 @@ function saveTemplates() {
   btn.style.background = 'var(--green)';
   setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1800);
 }
-function testSmtp() {
+async function testSmtp() {
   const btn = event.currentTarget;
+  const orig = btn.innerHTML;
   btn.textContent = 'Sending…';
-  setTimeout(() => { btn.textContent = '✓ Test email sent'; btn.style.color = 'var(--green)'; }, 1500);
-  setTimeout(() => {
-    btn.innerHTML = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Test Email`;
-    btn.style.color = '';
-  }, 3200);
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/test-email`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      btn.textContent = `✓ Sent to ${data.to}`;
+      btn.style.color = 'var(--green)';
+    } else {
+      btn.textContent = `✗ ${data.detail}`;
+      btn.style.color = 'var(--red)';
+    }
+  } catch (_) {
+    btn.textContent = '✗ API unreachable';
+    btn.style.color = 'var(--red)';
+  }
+
+  setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; btn.disabled = false; }, 3500);
 }
 
 // ── CHARTS ──────────────────────────────────────────────────────────
