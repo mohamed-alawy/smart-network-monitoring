@@ -18,22 +18,10 @@ NOTIFICATION_LLM_MODE=hybrid
 EOF
 echo "✓ .env written"
 
-# ── Create venv and install deps ─────────────────────────────────────
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt -q
-echo "✓ Dependencies installed"
-
-# ── Kill any previous instances ──────────────────────────────────────
-fuser -k 8000/tcp 2>/dev/null || true
-fuser -k 3000/tcp 2>/dev/null || true
-
-# ── Serve frontend on port 3000 (background) ─────────────────────────
-cd frontend
-nohup python3 -m http.server 3000 > /tmp/frontend.log 2>&1 &
-echo "✓ Frontend on port 3000"
-cd ..
-
-# ── Start RAG API on port 8000 ───────────────────────────────────────
-echo "✓ Starting RAG API on port 8000..."
-uvicorn modules.rag.api:app --host 0.0.0.0 --port 8000 --reload
+# ── Start with docker compose ────────────────────────────────────────
+docker compose up --build -d
+echo "✓ All services started"
+echo "  Frontend  → http://localhost:3000"
+echo "  RAG API   → http://localhost:8000"
+echo "  Weaviate  → http://localhost:8080"
+docker compose logs -f
