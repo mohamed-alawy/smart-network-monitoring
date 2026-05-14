@@ -1,12 +1,10 @@
 # RAG Module Dependencies
 langchain==0.2.16
 langchain-google-genai==1.0.10
-langchain-openai==0.1.23
 langchain-community==0.2.16
 langchain-weaviate==0.0.3
 weaviate-client==4.7.1
 google-generativeai==0.7.2
-openai==1.51.0
 
 # FastAPI
 fastapi==0.115.0

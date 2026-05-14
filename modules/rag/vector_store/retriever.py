@@ -1,12 +1,13 @@
 """
 Weaviate retriever wrapper for LangChain.
 Handles embedding generation + vector search + keyword fallback.
-Embedding provider is controlled by EMBEDDING_PROVIDER env var: google | openai
+Uses Google Gemini embeddings only.
 """
 
 import os
 from typing import List
 from langchain_core.documents import Document
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import weaviate
 from weaviate.classes.query import MetadataQuery
 from loguru import logger
@@ -17,7 +18,6 @@ from .schema import get_client, COLLECTION_NAME
 load_dotenv()
 
 TOP_K = int(os.getenv("TOP_K_RETRIEVAL", "5"))
-EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "google").lower()
 
 _embedder = None
 
@@ -26,19 +26,10 @@ def get_embedder():
     global _embedder
     if _embedder is not None:
         return _embedder
-
-    if EMBEDDING_PROVIDER == "openai":
-        from langchain_openai import OpenAIEmbeddings
-        _embedder = OpenAIEmbeddings(
-            model=os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"),
-            api_key=os.getenv("OPENAI_API_KEY"),
-        )
-    else:
-        from langchain_google_genai import GoogleGenerativeAIEmbeddings
-        _embedder = GoogleGenerativeAIEmbeddings(
-            model=os.getenv("GOOGLE_EMBEDDING_MODEL", "models/gemini-embedding-001"),
-            google_api_key=os.getenv("GEMINI_API_KEY"),
-        )
+    _embedder = GoogleGenerativeAIEmbeddings(
+        model=os.getenv("GOOGLE_EMBEDDING_MODEL", "models/gemini-embedding-001"),
+        google_api_key=os.getenv("GEMINI_API_KEY"),
+    )
     return _embedder
 
 
