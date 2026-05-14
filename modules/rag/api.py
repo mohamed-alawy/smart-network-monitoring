@@ -218,6 +218,84 @@ def _fire_notifications(location: str, rag: dict) -> NotificationResult:
     return NotificationResult(recipients_notified=notified, errors=errors)
 
 
+# ── Analyze endpoint (ML model output → RAG → Notification) ──────────────────
+
+class AnomalyRecord(BaseModel):
+    measurement_id:     Optional[str]   = None
+    timestamp:          Optional[str]   = None
+    location:           Optional[str]   = "Unknown"
+    cell_id:            Optional[str]   = None
+    severity:           str             = "medium"
+    ml_anomaly_score:   float           = 0.5
+    anomaly_types:      List[str]       = []
+    root_causes:        List[str]       = []
+    rsrp_dbm:           Optional[float] = None
+    rsrq_db:            Optional[float] = None
+    sinr_db:            Optional[float] = None
+    dl_throughput_mbps: Optional[float] = None
+
+
+class AnalyzeResponse(BaseModel):
+    processed:    int
+    rag_result:   Optional[dict]               = None
+    notification: Optional[NotificationResult] = None
+    skipped:      str                          = ""
+
+
+@app.post("/analyze", response_model=AnalyzeResponse)
+async def analyze(records: List[AnomalyRecord]):
+    """
+    يستقبل output من الـ ML anomaly detection مباشرة.
+    يشغّل RAG على السجل الأعلى severity ويبعت notifications تلقائياً.
+    """
+    if not records:
+        return AnalyzeResponse(processed=0, skipped="No records provided")
+
+    sev = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+    top = max(records, key=lambda r: (sev.get(r.severity, 0), r.ml_anomaly_score))
+
+    if top.severity == "low" and top.ml_anomaly_score < 0.4:
+        return AnalyzeResponse(processed=len(records), skipped="All records low severity")
+
+    location  = top.location or (f"Cell {top.cell_id}" if top.cell_id else "Unknown")
+    symptoms  = top.anomaly_types or top.root_causes or ["network degradation"]
+    root_cause = (top.root_causes[0] if top.root_causes
+                  else top.anomaly_types[0] if top.anomaly_types
+                  else "Anomaly detected")
+
+    inputs = {
+        "timestamp":  int(time.time() * 1000),
+        "location":   location,
+        "severity":   top.severity.upper(),
+        "root_cause": root_cause,
+        "symptoms":   symptoms,
+    }
+
+    try:
+        raw = get_chain().invoke(inputs)
+    except Exception as e:
+        logger.error(f"RAG chain failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    try:
+        clean  = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        parsed = json.loads(clean)
+    except Exception:
+        parsed = {
+            "cause_explanation": raw, "priority": top.severity,
+            "estimated_resolution_time": "Unknown", "suggested_solution": [],
+            "affected_standards": [], "escalation_needed": True, "additional_notes": "",
+        }
+
+    notification = _fire_notifications(location, parsed)
+
+    return AnalyzeResponse(
+        processed=len(records),
+        rag_result={**inputs, **parsed, "ml_score": top.ml_anomaly_score},
+        notification=notification,
+    )
+
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 @app.get("/health")

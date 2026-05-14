@@ -567,7 +567,81 @@ function setChartRange(range, btn) {
   drawMainChart(noise);
 }
 
-// ── INIT ─────────────────────────────────────────────────────────────
+// ── CHAT ─────────────────────────────────────────────────────────────
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const q = input.value.trim();
+  if (!q) return;
+
+  input.value = '';
+  document.getElementById('chat-suggestions').style.display = 'none';
+
+  _appendMsg(q, 'user');
+  const loadingId = _appendMsg('...', 'assistant loading');
+
+  try {
+    const res = await fetch(`${API_BASE}/query/general`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q }),
+    });
+    const data = await res.json();
+    _updateMsg(loadingId, data.answer || 'No response from RAG.');
+  } catch (_) {
+    _updateMsg(loadingId, 'Could not reach the RAG API. Make sure the backend is running.');
+  }
+}
+
+function sendSuggestion(btn) {
+  document.getElementById('chat-input').value = btn.textContent;
+  btn.remove();
+  sendChat();
+}
+
+function _appendMsg(text, classes) {
+  const id = 'msg-' + Date.now();
+  const msgs = document.getElementById('chat-messages');
+  const isUser = classes.includes('user');
+  msgs.innerHTML += `
+    <div class="chat-msg ${classes}" id="${id}">
+      <div class="chat-bubble">${isUser ? text : text}</div>
+    </div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+
+function _updateMsg(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'chat-msg assistant';
+  el.querySelector('.chat-bubble').textContent = text;
+}
+
+// ── ANALYZE (ML → RAG) ───────────────────────────────────────────────
+async function sendToAnalyze() {
+  const raw = document.getElementById('ml-output-input').value.trim();
+  const resultEl  = document.getElementById('analyze-result');
+  const resultJSON = document.getElementById('analyze-result-json');
+
+  let records;
+  try { records = JSON.parse(raw); }
+  catch (_) { alert('Invalid JSON — paste a valid array'); return; }
+
+  resultEl.style.display = 'block';
+  resultJSON.textContent = 'Sending to RAG pipeline…';
+
+  try {
+    const res  = await fetch(`${API_BASE}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(records),
+    });
+    const data = await res.json();
+    resultJSON.textContent = JSON.stringify(data, null, 2);
+  } catch (e) {
+    resultJSON.textContent = 'Error: ' + e.message;
+  }
+}
 document.addEventListener('DOMContentLoaded', () => {
   if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
   renderAlerts(document.getElementById('dashboard-alerts'), ALERTS.slice(0, 3));

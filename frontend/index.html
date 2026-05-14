@@ -39,6 +39,14 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Settings
     </button>
+    <button class="nav-tab" onclick="showPage('chat', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      AI Chat
+    </button>
+    <button class="nav-tab" onclick="showPage('model', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      ML Model
+    </button>
     <div class="mobile-nav-meta">
       <div class="live-badge mobile-live-badge"><div class="live-dot"></div> LIVE</div>
       <div class="topbar-time mobile-topbar-time" id="mobile-clock">--:--:--</div>
@@ -482,6 +490,155 @@ We apologize for the inconvenience.</textarea>
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: AI CHAT
+════════════════════════════════════════════════════ -->
+<div id="page-chat" class="page main">
+  <div class="section-wrap" style="max-width:900px;margin:0 auto;">
+    <div class="section-title">AI Network Assistant <span class="section-label">RAG-POWERED</span></div>
+
+    <div class="card" style="height:calc(100vh - 200px);display:flex;flex-direction:column;">
+      <!-- messages -->
+      <div id="chat-messages" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;">
+        <div class="chat-msg assistant">
+          <div class="chat-bubble">
+            مرحباً، أنا مساعد الشبكات الذكي. اسألني عن أي مشكلة في الشبكة أو anomaly وهساعدك تفهمها وتحلها بناءاً على مواصفات 3GPP.
+          </div>
+        </div>
+      </div>
+
+      <!-- suggestions -->
+      <div id="chat-suggestions" style="padding:0 20px 12px;display:flex;flex-wrap:wrap;gap:8px;">
+        <button class="suggestion-chip" onclick="sendSuggestion(this)">ما هي أسباب انخفاض RSRP؟</button>
+        <button class="suggestion-chip" onclick="sendSuggestion(this)">كيف أحل مشكلة ارتفاع الـ latency؟</button>
+        <button class="suggestion-chip" onclick="sendSuggestion(this)">ما معنى SLA Violation في 5G؟</button>
+        <button class="suggestion-chip" onclick="sendSuggestion(this)">Congestion troubleshooting steps</button>
+      </div>
+
+      <!-- input -->
+      <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px;">
+        <input id="chat-input" class="input-field" placeholder="اسأل عن أي مشكلة في الشبكة..."
+          style="flex:1;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}" />
+        <button class="btn btn-primary" onclick="sendChat()" id="chat-send-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: ML MODEL
+════════════════════════════════════════════════════ -->
+<div id="page-model" class="page main">
+  <div class="section-wrap">
+    <div class="section-title">Anomaly Detection Model <span class="section-label">UNSUPERVISED-FIRST</span></div>
+
+    <!-- Pipeline overview -->
+    <div class="cards-grid" style="margin-bottom:20px;">
+      <div class="stat-card" style="--accent:var(--blue);">
+        <div class="stat-card-label">Pipeline Type</div>
+        <div class="stat-value" style="font-size:1.1rem;font-family:var(--font-ui);">Hybrid</div>
+        <div class="stat-delta neutral">Unsupervised → Supervised</div>
+      </div>
+      <div class="stat-card" style="--accent:var(--orange);">
+        <div class="stat-card-label">Models Trained</div>
+        <div class="stat-value">6</div>
+        <div class="stat-delta neutral">Best selected by F1</div>
+      </div>
+      <div class="stat-card" style="--accent:var(--green);">
+        <div class="stat-card-label">Input Features</div>
+        <div class="stat-value">15</div>
+        <div class="stat-delta neutral">11 raw + 4 engineered</div>
+      </div>
+      <div class="stat-card" style="--accent:var(--yellow);">
+        <div class="stat-card-label">Contamination</div>
+        <div class="stat-value">3–8<span class="unit">%</span></div>
+        <div class="stat-delta neutral">Auto-tuned</div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:20px;">
+      <!-- Pipeline stages -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Pipeline Stages</span></div>
+        <div class="card-body" style="padding:0;">
+          <table class="data-table">
+            <thead><tr><th>Stage</th><th>Model</th><th>Type</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Isolation Forest</td><td><span class="badge ok">Unsupervised</span></td></tr>
+              <tr><td>2</td><td>Local Outlier Factor</td><td><span class="badge ok">Unsupervised</span></td></tr>
+              <tr><td>3</td><td>Autoencoder (PyTorch)</td><td><span class="badge ok">Unsupervised</span></td></tr>
+              <tr><td>4</td><td>Ensemble Vote (≥2/3)</td><td><span class="badge medium">Pseudo-Labels</span></td></tr>
+              <tr><td>5</td><td>XGBoost</td><td><span class="badge high">Supervised</span></td></tr>
+              <tr><td>6</td><td>Random Forest</td><td><span class="badge high">Supervised</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Feature set -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Feature Set</span></div>
+        <div class="card-body">
+          <div style="font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Raw Features (11)</div>
+          <div class="tag-list" style="margin-bottom:14px;">
+            <span class="tag">rsrp_dbm</span><span class="tag">rsrq_db</span><span class="tag">rssi_dbm</span>
+            <span class="tag">sinr_db</span><span class="tag">pathloss_db</span><span class="tag">dl_throughput_mbps</span>
+            <span class="tag">ul_throughput_mbps</span><span class="tag">timing_advance</span>
+            <span class="tag">frequency_khz</span><span class="tag">height_m</span><span class="tag">azimuth_deg</span>
+          </div>
+          <div style="font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Engineered Features (4)</div>
+          <div class="tag-list">
+            <span class="tag" style="color:var(--orange);border-color:var(--orange-lo);">signal_quality_index</span>
+            <span class="tag" style="color:var(--orange);border-color:var(--orange-lo);">throughput_ratio</span>
+            <span class="tag" style="color:var(--orange);border-color:var(--orange-lo);">efficiency</span>
+            <span class="tag" style="color:var(--orange);border-color:var(--orange-lo);">signal_noise_gap</span>
+          </div>
+          <div style="margin-top:16px;font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Severity Mapping</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:.78rem;">
+            <div style="display:flex;justify-content:space-between;"><span class="badge critical">Critical</span><span style="color:var(--text-1);">score ≥ 80th percentile</span></div>
+            <div style="display:flex;justify-content:space-between;"><span class="badge high">High</span><span style="color:var(--text-1);">score ≥ 60th percentile</span></div>
+            <div style="display:flex;justify-content:space-between;"><span class="badge medium">Medium</span><span style="color:var(--text-1);">anomaly, score &lt; 60th</span></div>
+            <div style="display:flex;justify-content:space-between;"><span class="badge low">Low</span><span style="color:var(--text-1);">not anomalous</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Integration card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Send to RAG Pipeline</span>
+        <span style="font-size:.72rem;color:var(--text-2);">POST /analyze</span>
+      </div>
+      <div class="card-body">
+        <div style="font-size:.8rem;color:var(--text-1);margin-bottom:14px;">
+          أرسل output من الـ ML model مباشرة للـ RAG Pipeline—هيحلله ويبعت notifications تلقائياً.
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="flex:1;min-width:280px;">
+            <label class="input-label">Paste ML Output (JSON array)</label>
+            <textarea id="ml-output-input" class="template-textarea" style="min-height:120px;font-size:.72rem;"
+              placeholder='[{"severity":"high","ml_anomaly_score":0.82,"location":"Cairo Cell-07","anomaly_types":["RSRP deviation"],"root_causes":["Coverage hole"],"rsrp_dbm":-115}]'></textarea>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:22px;">
+            <button class="btn btn-primary" onclick="sendToAnalyze()">
+              <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              Send to RAG
+            </button>
+          </div>
+        </div>
+        <div id="analyze-result" style="display:none;margin-top:14px;padding:12px;background:var(--bg-2);border-radius:var(--radius);border:1px solid var(--border);">
+          <div style="font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Result</div>
+          <pre id="analyze-result-json" style="font-size:.72rem;color:var(--text-0);white-space:pre-wrap;line-height:1.6;"></pre>
         </div>
       </div>
     </div>

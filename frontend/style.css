@@ -456,7 +456,31 @@ body.light .icon-moon { display: none; }
 .footer { border-top: 1px solid var(--border); padding: 12px 28px; display: flex; align-items: center; justify-content: space-between; font-family: var(--font-data); font-size: .68rem; color: var(--text-2); }
 .footer-status { display: flex; align-items: center; gap: 8px; }
 
-/* ─── SCROLLBAR ──────────────────────────────────────────────────── */
+/* ─── CHAT ───────────────────────────────────────────────────────── */
+.chat-msg { display: flex; gap: 10px; }
+.chat-msg.user { flex-direction: row-reverse; }
+
+.chat-bubble {
+  max-width: 70%; padding: 10px 14px;
+  border-radius: 12px; font-size: .83rem; line-height: 1.6;
+}
+.chat-msg.assistant .chat-bubble {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-bottom-left-radius: 3px; color: var(--text-0);
+}
+.chat-msg.user .chat-bubble {
+  background: var(--orange); color: #fff;
+  border-bottom-right-radius: 3px;
+}
+.chat-msg.assistant.loading .chat-bubble { color: var(--text-2); }
+
+.suggestion-chip {
+  padding: 5px 12px; font-size: .72rem; font-weight: 500;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 20px; color: var(--text-1); cursor: pointer;
+  transition: all .2s;
+}
+.suggestion-chip:hover { border-color: var(--orange); color: var(--orange-hi); background: var(--orange-lo); }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg-0); }
 ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 3px; }
