@@ -24,6 +24,10 @@ source .venv/bin/activate
 pip install -r requirements.txt -q
 echo "✓ Dependencies installed"
 
+# ── Kill any previous instances ──────────────────────────────────────
+fuser -k 8000/tcp 2>/dev/null || true
+fuser -k 3000/tcp 2>/dev/null || true
+
 # ── Serve frontend on port 3000 (background) ─────────────────────────
 cd frontend
 nohup python3 -m http.server 3000 > /tmp/frontend.log 2>&1 &
