@@ -329,10 +329,62 @@ function startIngest() {
   nextStep();
 }
 
-// ── SETTINGS ────────────────────────────────────────────────────────
-function updateEmail(role, val) {
-  const el = document.getElementById(role + '-email-display');
-  if (el) el.textContent = val || '(not set)';
+// ── CONFIG API ───────────────────────────────────────────────────────
+const API_BASE = 'http://localhost:8000';
+
+async function loadConfig() {
+  try {
+    const res = await fetch(`${API_BASE}/config`);
+    if (!res.ok) return;
+    const cfg = await res.json();
+
+    // emails
+    _setField('engineer-email',   cfg.engineer_email);
+    _setField('callcenter-email', cfg.callcenter_email);
+    _setField('client-email',     cfg.client_email);
+    _setDisplay('engineer-email-display',   cfg.engineer_email   || '(not set)');
+    _setDisplay('callcenter-email-display', cfg.callcenter_email || '(not set)');
+    _setDisplay('client-email-display',     cfg.client_email     || '(not set)');
+
+    // smtp
+    _setField('smtp-sender', cfg.smtp_sender);
+
+    // footer status
+    const modelEl = document.getElementById('footer-model');
+    if (modelEl) modelEl.textContent = cfg.gemini_model || 'Unknown';
+
+  } catch (_) {
+    // API offline — keep placeholders
+  }
+}
+
+async function saveConfig() {
+  const payload = {
+    engineer_email:   document.getElementById('engineer-email')?.value   || '',
+    call_center_email: document.getElementById('callcenter-email')?.value || '',
+    client_email:     document.getElementById('client-email')?.value     || '',
+    smtp_sender:      document.getElementById('smtp-sender')?.value      || '',
+  };
+  try {
+    await fetch(`${API_BASE}/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const btn = document.getElementById('save-config-btn');
+    if (btn) { const orig = btn.innerHTML; btn.textContent = '✓ Saved'; btn.style.background = 'var(--green)'; setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1800); }
+  } catch (_) {
+    alert('Could not reach API');
+  }
+}
+
+function _setField(id, val) {
+  const el = document.getElementById(id);
+  if (el && val) el.value = val;
+}
+function _setDisplay(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
 }
 function toggleRecipient(role, cb) {
   const el = document.getElementById(role + '-email-display');
@@ -476,15 +528,12 @@ function setChartRange(range, btn) {
 
 // ── INIT ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // restore theme
   if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
-
   renderAlerts(document.getElementById('dashboard-alerts'), ALERTS.slice(0, 3));
   renderAlerts(document.getElementById('alerts-list'), ALERTS);
   renderRagFiles();
   liveUpdate();
   setInterval(liveUpdate, 4000);
-
-  // default active chart btn
   document.querySelector('.chart-time-btn')?.classList.add('active');
+  loadConfig();
 });

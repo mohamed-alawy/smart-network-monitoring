@@ -437,7 +437,7 @@ We apologize for the inconvenience.</textarea>
             </div>
 
             <div style="display:flex;gap:8px;margin-top:14px;">
-              <button class="btn btn-primary" onclick="saveTemplates()">
+              <button class="btn btn-primary" id="save-config-btn" onclick="saveConfig()">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 Save Templates
               </button>
@@ -452,7 +452,7 @@ We apologize for the inconvenience.</textarea>
             <div style="display:flex;flex-direction:column;gap:10px;">
               <div>
                 <label class="input-label">Sender Email</label>
-                <input class="input-field" value="noreply@company.com" />
+                <input class="input-field" id="smtp-sender" value="" placeholder="noreply@company.com" />
               </div>
               <div>
                 <label class="input-label">App Password</label>

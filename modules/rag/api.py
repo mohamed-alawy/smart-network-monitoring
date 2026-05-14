@@ -133,6 +133,41 @@ class IngestRequest(BaseModel):
     vocabulary_docx: Optional[str] = Field(default="data/raw/telecom_complaints/3GPP_vocabulary.docx")
 
 
+# ── Config endpoint ───────────────────────────────────────────────────────────
+
+@app.get("/config")
+async def get_config():
+    """يرجع الـ config من الـ .env للـ frontend — بدون secrets."""
+    return {
+        "engineer_email":   os.getenv("ENGINEER_EMAIL", ""),
+        "callcenter_email": os.getenv("CALL_CENTER_EMAIL", ""),
+        "client_email":     os.getenv("CLIENT_EMAIL", ""),
+        "smtp_sender":      os.getenv("SMTP_SENDER", ""),
+        "smtp_host":        "smtp.gmail.com",
+        "smtp_port":        587,
+        "gemini_model":     os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+        "notification_mode": os.getenv("NOTIFICATION_LLM_MODE", "hybrid"),
+        "top_k":            int(os.getenv("TOP_K_RETRIEVAL", "5")),
+    }
+
+
+@app.post("/config")
+async def update_config(data: dict):
+    """يحفظ التعديلات اللي بعتها الـ frontend في الـ runtime فقط (مش في الـ .env)."""
+    allowed = {
+        "ENGINEER_EMAIL", "CALL_CENTER_EMAIL", "CLIENT_EMAIL",
+        "SMTP_SENDER", "NOTIFICATION_LLM_MODE", "TOP_K_RETRIEVAL",
+    }
+    updated = []
+    for key, val in data.items():
+        env_key = key.upper()
+        if env_key in allowed:
+            os.environ[env_key] = str(val)
+            updated.append(env_key)
+    logger.info(f"Config updated: {updated}")
+    return {"updated": updated}
+
+
 # ── Notification helper ───────────────────────────────────────────────────────
 
 def _fire_notifications(location: str, rag: dict) -> NotificationResult:
