@@ -18,9 +18,10 @@ NOTIFICATION_LLM_MODE=hybrid
 EOF
 echo "✓ .env written"
 
-# ── Bootstrap pip then install deps ─────────────────────────────────
-curl -sS https://bootstrap.pypa.io/get-pip.py | python3
-python3 -m pip install -r requirements.txt -q
+# ── Create venv and install deps ─────────────────────────────────────
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt -q
 echo "✓ Dependencies installed"
 
 # ── Serve frontend on port 3000 (background) ─────────────────────────
@@ -31,4 +32,4 @@ cd ..
 
 # ── Start RAG API on port 8000 ───────────────────────────────────────
 echo "✓ Starting RAG API on port 8000..."
-python3 -m uvicorn modules.rag.api:app --host 0.0.0.0 --port 8000 --reload
+uvicorn modules.rag.api:app --host 0.0.0.0 --port 8000 --reload
