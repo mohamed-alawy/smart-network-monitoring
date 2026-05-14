@@ -15,11 +15,21 @@ COLLECTION_NAME = "NetworkDocs"
 
 
 def get_client() -> weaviate.WeaviateClient:
-    """Return a connected Weaviate client — anonymous access, no auth."""
-    url = os.getenv("WEAVIATE_URL", "http://localhost:8080")
-    host = url.replace("http://", "").replace("https://", "").split(":")[0]
-    port = int(url.split(":")[-1])
+    """Connect to Weaviate — local (anonymous) or cloud (API key)."""
+    url     = os.getenv("WEAVIATE_URL", "http://localhost:8080")
+    api_key = os.getenv("WEAVIATE_API_KEY", "").strip()
 
+    host = url.replace("http://", "").replace("https://", "").split(":")[0]
+
+    # Weaviate Cloud cluster (*.weaviate.network)
+    if "weaviate.network" in host or api_key:
+        return weaviate.connect_to_weaviate_cloud(
+            cluster_url=url,
+            auth_credentials=weaviate.auth.AuthApiKey(api_key),
+        )
+
+    # Local / Docker — anonymous, skip OIDC check
+    port = int(url.split(":")[-1]) if ":" in url.split("//")[-1] else 8080
     return weaviate.connect_to_custom(
         http_host=host,
         http_port=port,
