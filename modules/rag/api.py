@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError
 from loguru import logger
@@ -56,12 +57,18 @@ async def lifespan(app: FastAPI):
         logger.error("Weaviate did not become ready — continuing anyway.")
     yield
 
-
 app = FastAPI(
     title="RAG Troubleshooting API",
     description="Network alert troubleshooting via 3GPP spec RAG retrieval + auto notifications",
     version="2.0.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

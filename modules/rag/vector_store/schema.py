@@ -15,30 +15,20 @@ COLLECTION_NAME = "NetworkDocs"
 
 
 def get_client() -> weaviate.WeaviateClient:
-    """Return a connected Weaviate client. Reads env vars at call time so Docker service names resolve correctly."""
+    """Return a connected Weaviate client — anonymous access, no auth."""
     url = os.getenv("WEAVIATE_URL", "http://localhost:8080")
-    api_key = os.getenv("WEAVIATE_API_KEY", "").strip()
-
     host = url.replace("http://", "").replace("https://", "").split(":")[0]
     port = int(url.split(":")[-1])
 
-    if api_key:
-        client = weaviate.connect_to_custom(
-            http_host=host,
-            http_port=port,
-            http_secure=False,
-            grpc_host=host,
-            grpc_port=50051,
-            grpc_secure=False,
-            auth_credentials=weaviate.auth.AuthApiKey(api_key),
-        )
-    else:
-        client = weaviate.connect_to_local(
-            host=host,
-            port=port,
-            grpc_port=50051,
-        )
-    return client
+    return weaviate.connect_to_custom(
+        http_host=host,
+        http_port=port,
+        http_secure=False,
+        grpc_host=host,
+        grpc_port=50051,
+        grpc_secure=False,
+        skip_init_checks=True,
+    )
 
 
 def create_schema(client: weaviate.WeaviateClient) -> None:
