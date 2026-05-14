@@ -16,14 +16,18 @@ CALL_CENTER_EMAIL=${CALL_CENTER_EMAIL}
 CLIENT_EMAIL=${CLIENT_EMAIL}
 NOTIFICATION_LLM_MODE=hybrid
 EOF
-
 echo "✓ .env written"
 
-# ── Serve frontend on port 3000 ──────────────────────────────────────
-cd frontend && python3 -m http.server 3000 &
+# ── Install dependencies ─────────────────────────────────────────────
+pip install -r requirements.txt -q
+echo "✓ Dependencies installed"
+
+# ── Serve frontend on port 3000 (background) ─────────────────────────
+cd frontend
+nohup python3 -m http.server 3000 > /tmp/frontend.log 2>&1 &
 echo "✓ Frontend on port 3000"
 cd ..
 
-# ── Start RAG API on port 8000 ───────────────────────────────────────
+# ── Start RAG API on port 8000 (foreground so logs show) ─────────────
 echo "✓ Starting RAG API on port 8000..."
-uvicorn modules.rag.api:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn modules.rag.api:app --host 0.0.0.0 --port 8000 --reload
