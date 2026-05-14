@@ -85,8 +85,11 @@ let uploadQueue   = [];
 
 // ── CLOCK ──────────────────────────────────────────────────────────
 function updateClock() {
-  document.getElementById('clock').textContent =
-    new Date().toTimeString().slice(0, 8);
+  const now = new Date().toTimeString().slice(0, 8);
+  const clock = document.getElementById('clock');
+  const mobileClock = document.getElementById('mobile-clock');
+  if (clock) clock.textContent = now;
+  if (mobileClock) mobileClock.textContent = now;
 }
 setInterval(updateClock, 1000);
 updateClock();
@@ -97,6 +100,7 @@ function showPage(name, btn) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   if (btn) btn.classList.add('active');
+  closeMobileNav();
 }
 
 // ── HELPERS ─────────────────────────────────────────────────────────
@@ -537,6 +541,21 @@ function liveUpdate() {
 function toggleTheme() {
   document.body.classList.toggle('light');
   localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+}
+
+function toggleMobileNav(btn) {
+  const topbar = document.querySelector('.topbar');
+  if (!topbar) return;
+  const isOpen = topbar.classList.toggle('menu-open');
+  if (btn) btn.setAttribute('aria-expanded', String(isOpen));
+}
+
+function closeMobileNav() {
+  const topbar = document.querySelector('.topbar');
+  const toggle = document.querySelector('.mobile-nav-toggle');
+  if (!topbar) return;
+  topbar.classList.remove('menu-open');
+  if (toggle) toggle.setAttribute('aria-expanded', 'false');
 }
 
 // ── CHART TIME BUTTONS ─────────────────────────────────────────────────

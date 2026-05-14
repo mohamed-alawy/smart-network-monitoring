@@ -110,7 +110,26 @@ body:not(.light)::before {
 .nav-tab.active { color: var(--text-0); border-bottom-color: var(--orange); }
 .nav-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
 
+.mobile-nav-meta { display: none; }
+
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.mobile-nav-toggle {
+  display: none;
+  width: 32px;
+  height: 32px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  align-items: center;
+  justify-content: center;
+  color: var(--text-1);
+  transition: all .2s;
+}
+.mobile-nav-toggle:hover { border-color: var(--border-lit); color: var(--text-0); }
+.mobile-nav-toggle svg { width: 16px; height: 16px; }
+.icon-close { display: none; }
+.topbar.menu-open .icon-menu { display: none; }
+.topbar.menu-open .icon-close { display: block; }
 
 /* theme toggle */
 .theme-btn {
@@ -442,3 +461,61 @@ body.light .icon-moon { display: none; }
 ::-webkit-scrollbar-track { background: var(--bg-0); }
 ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-lit); }
+
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0 16px;
+    justify-content: space-between;
+  }
+
+  .topbar-logo { margin-right: 0; }
+  .topbar-right { margin-left: 0; gap: 8px; }
+  .live-badge,
+  .topbar-time { display: none; }
+  .mobile-nav-toggle { display: inline-flex; }
+
+  .nav-tabs {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    right: 0;
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    height: auto;
+    padding: 8px 0;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 18px 30px rgba(0, 0, 0, .22);
+  }
+
+  .topbar.menu-open .nav-tabs { display: flex; }
+
+  .mobile-nav-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 18px 6px;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+
+  .mobile-live-badge { display: flex; }
+  .mobile-topbar-time { display: block; }
+
+  .nav-tab {
+    width: 100%;
+    justify-content: flex-start;
+    height: auto;
+    padding: 14px 18px;
+    border-bottom: none;
+    border-left: 3px solid transparent;
+  }
+
+  .nav-tab.active {
+    border-bottom-color: transparent;
+    border-left-color: var(--orange);
+    background: var(--orange-lo);
+  }
+}
