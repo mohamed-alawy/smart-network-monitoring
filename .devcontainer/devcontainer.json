@@ -1,0 +1,45 @@
+{
+  "name": "NetPulse — Network Monitoring",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "rag_api",
+  "workspaceFolder": "/app",
+  "forwardPorts": [3000, 8000, 8080],
+  "portsAttributes": {
+    "3000": { "label": "Frontend (NetPulse UI)", "onAutoForward": "openBrowser" },
+    "8000": { "label": "RAG API" },
+    "8080": { "label": "Weaviate" }
+  },
+  "postCreateCommand": "pip install -r /app/../requirements.txt",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "mtxr.sqltools"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      }
+    }
+  },
+  "secrets": {
+    "GEMINI_API_KEY": {
+      "description": "Google Gemini API Key"
+    },
+    "SMTP_SENDER": {
+      "description": "Gmail address used to send notifications"
+    },
+    "SMTP_APP_PASSWORD": {
+      "description": "Gmail App Password (16 chars)"
+    },
+    "ENGINEER_EMAIL": {
+      "description": "Email for engineer alerts"
+    },
+    "CALL_CENTER_EMAIL": {
+      "description": "Email for call center alerts"
+    },
+    "CLIENT_EMAIL": {
+      "description": "Email for client notifications"
+    }
+  }
+}
