@@ -1,6 +1,15 @@
 version: "3.9"
 
 services:
+  frontend:
+    image: nginx:alpine
+    container_name: netpulse_frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
   weaviate:
     image: semitechnologies/weaviate:1.24.6
     container_name: weaviate

@@ -1,0 +1,490 @@
+// ── DATA ──────────────────────────────────────────────────────────
+const ALERTS = [
+  {
+    id: 1, severity: 'critical', title: 'High Latency — Cairo Cell-07',
+    location: 'Cairo, Zone B', root_cause: 'Congestion',
+    cause_explanation: 'PRB utilization exceeded 95% threshold causing queuing delays and packet retransmissions across the eMBB slice.',
+    priority: 'critical', eta: '1–2 hours',
+    suggested_solution: [
+      'Offload traffic to adjacent Cell-09',
+      'Enable load balancing on RNC',
+      'Increase QoS priority for URLLC slice',
+      'Schedule PRB expansion during maintenance window',
+    ],
+    affected_standards: ['TS 28.552 §5.1', 'TS 28.532 §7.3'],
+    escalation_needed: true,
+    additional_notes: 'SLA breach imminent. 3 enterprise clients affected.',
+    ts: Date.now() - 420000, score: 0.91,
+    symptoms: ['latency > 150ms', 'PRB > 95%', 'packet retransmission spike'],
+    notified: ['engineer', 'call_center', 'client'],
+  },
+  {
+    id: 2, severity: 'high', title: 'SLA Violation — Alexandria Macro-03',
+    location: 'Alexandria, North', root_cause: 'SLA Breach',
+    cause_explanation: 'Downlink throughput dropped below SLA threshold due to interference from adjacent sector.',
+    priority: 'high', eta: '2–4 hours',
+    suggested_solution: [
+      'Adjust antenna tilt on Macro-03',
+      'Check interference matrix SON report',
+      'Trigger handover optimization',
+    ],
+    affected_standards: ['TS 28.552 §6.2'],
+    escalation_needed: false,
+    additional_notes: 'Throughput at 210 Mbps vs 300 Mbps SLA target.',
+    ts: Date.now() - 1800000, score: 0.74,
+    symptoms: ['throughput < 300Mbps', 'SINR low', 'handover failure rate 8%'],
+    notified: ['engineer', 'call_center', 'client'],
+  },
+  {
+    id: 3, severity: 'high', title: 'Packet Loss Spike — Giza HQ',
+    location: 'Giza, HQ Site', root_cause: 'Link Degradation',
+    cause_explanation: 'Backhaul link experiencing high BER due to weather-related interference on microwave hop.',
+    priority: 'high', eta: '3–6 hours',
+    suggested_solution: [
+      'Switch backhaul to fiber redundancy',
+      'Monitor BER threshold',
+      'Alert NOC for physical inspection',
+    ],
+    affected_standards: ['TS 32.111 §4'],
+    escalation_needed: true,
+    additional_notes: 'Packet loss at 4.2% — above 2% SLA.',
+    ts: Date.now() - 3600000, score: 0.68,
+    symptoms: ['packet_loss 4.2%', 'BER elevated', 'jitter > 20ms'],
+    notified: ['engineer', 'call_center', 'client'],
+  },
+  {
+    id: 4, severity: 'medium', title: 'Weak RF Signal — Heliopolis Micro-12',
+    location: 'Heliopolis, Sector 3', root_cause: 'RF Degradation',
+    cause_explanation: 'RSRP dropped below –100 dBm likely due to antenna obstruction or hardware fault.',
+    priority: 'medium', eta: '4–8 hours',
+    suggested_solution: [
+      'Schedule site inspection',
+      'Check antenna connections',
+      'Verify power amplifier output',
+    ],
+    affected_standards: ['TS 28.552 §5.3'],
+    escalation_needed: false,
+    additional_notes: 'Coverage hole forming in 300m radius.',
+    ts: Date.now() - 7200000, score: 0.52,
+    symptoms: ['RSRP < –100dBm', 'coverage complaint calls up 20%'],
+    notified: ['call_center'],
+  },
+];
+
+const RAG_FILES = [
+  { name: '28532-i80.docx',              type: 'DOCX', chunks: 312, size: '1.2 MB' },
+  { name: 'TS28532_PerfMnS.yaml',         type: 'YAML', chunks: 87,  size: '340 KB' },
+  { name: 'TS28532_HeartbeatNtf.yaml',    type: 'YAML', chunks: 34,  size: '120 KB' },
+  { name: '32111-1-i00.doc',              type: 'DOC',  chunks: 428, size: '2.1 MB' },
+  { name: 'TeleQnA.txt',                  type: 'TXT',  chunks: 502, size: '6.7 MB' },
+  { name: '3GPP_vocabulary.docx',         type: 'DOCX', chunks: 91,  size: '450 KB' },
+];
+
+let currentFilter = 'all';
+let uploadQueue   = [];
+
+// ── CLOCK ──────────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toTimeString().slice(0, 8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── NAVIGATION ─────────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page.main').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ── HELPERS ─────────────────────────────────────────────────────────
+function timeAgo(ts) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 60)  return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24)  return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+function severityIcon(s) {
+  const icons = {
+    critical: `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    high:     `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    medium:   `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+    low:      `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+  };
+  return icons[s] || icons.low;
+}
+
+// ── RENDER ALERTS ───────────────────────────────────────────────────
+function renderAlerts(container, alerts) {
+  if (!alerts.length) {
+    container.innerHTML = `<div class="empty-state"><p>No alerts found</p></div>`;
+    return;
+  }
+  container.innerHTML = alerts.map(a => `
+    <div class="alert-item ${a.severity}" onclick="openPanel(${a.id})">
+      <div class="alert-icon">${severityIcon(a.severity)}</div>
+      <div class="alert-body">
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-meta">
+          <span>${a.location}</span>
+          <span>${a.root_cause}</span>
+          <span>${timeAgo(a.ts)}</span>
+        </div>
+      </div>
+      <div class="alert-score">${Math.round(a.score * 100)}%</div>
+    </div>
+  `).join('');
+}
+
+function filterAlerts(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('#page-alerts .btn[onclick^="filterAlerts"]')
+    .forEach(b => b.className = 'btn btn-ghost btn-sm');
+  if (btn) btn.className = 'btn btn-primary btn-sm';
+  const list = f === 'all' ? ALERTS : ALERTS.filter(a => a.severity === f);
+  renderAlerts(document.getElementById('alerts-list'), list);
+}
+
+function searchAlerts(q) {
+  const lq = q.toLowerCase();
+  const base = currentFilter === 'all' ? ALERTS : ALERTS.filter(a => a.severity === currentFilter);
+  renderAlerts(
+    document.getElementById('alerts-list'),
+    base.filter(a =>
+      a.title.toLowerCase().includes(lq) ||
+      a.location.toLowerCase().includes(lq) ||
+      a.root_cause.toLowerCase().includes(lq)
+    )
+  );
+}
+
+// ── DETAIL PANEL ────────────────────────────────────────────────────
+function openPanel(id) {
+  const a = ALERTS.find(x => x.id === id);
+  if (!a) return;
+
+  document.getElementById('panel-title').textContent = a.title;
+  document.getElementById('panel-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <span class="badge ${a.severity}">${a.severity.toUpperCase()}</span>
+      <span style="font-size:.75rem;color:var(--text-2);">${timeAgo(a.ts)}</span>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:.68rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px;">Anomaly Score</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="score-meter" style="flex:1;"><div class="score-fill" style="width:${a.score*100}%"></div></div>
+        <span style="font-family:var(--font-display);font-weight:700;">${Math.round(a.score*100)}%</span>
+      </div>
+    </div>
+    <div class="detail-row"><div class="detail-key">Location</div><div class="detail-val">${a.location}</div></div>
+    <div class="detail-row"><div class="detail-key">Root Cause</div><div class="detail-val">${a.root_cause}</div></div>
+    <div class="detail-row">
+      <div class="detail-key">Cause Explanation</div>
+      <div class="detail-val" style="color:var(--text-1);font-size:.8rem;">${a.cause_explanation}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-key">Symptoms</div>
+      <div class="detail-val"><div class="tag-list">${a.symptoms.map(s=>`<span class="tag">${s}</span>`).join('')}</div></div>
+    </div>
+    <div class="detail-row"><div class="detail-key">Estimated Resolution</div><div class="detail-val">${a.eta}</div></div>
+    <div class="detail-row">
+      <div class="detail-key">Escalation Needed</div>
+      <div class="detail-val" style="color:${a.escalation_needed?'var(--red)':'var(--green)'}">
+        ${a.escalation_needed ? '⚠ Yes — Escalate to NOC' : '✓ No'}
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-key">Suggested Solution</div>
+      <div class="detail-val">
+        <div class="solution-steps">
+          ${a.suggested_solution.map((s,i)=>`<div class="solution-step"><span class="step-num">${i+1}</span><span>${s}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-key">Affected Standards</div>
+      <div class="detail-val"><div class="tag-list">${a.affected_standards.map(s=>`<span class="tag" style="color:var(--orange);border-color:var(--orange-lo)">${s}</span>`).join('')}</div></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-key">Notified</div>
+      <div class="detail-val"><div class="tag-list">${a.notified.map(r=>`<span class="tag" style="color:var(--green);border-color:var(--green-lo)">✓ ${r}</span>`).join('')}</div></div>
+    </div>
+    ${a.additional_notes ? `<div class="detail-row"><div class="detail-key">Notes</div><div class="detail-val" style="color:var(--text-2);font-size:.78rem;">${a.additional_notes}</div></div>` : ''}
+    <div style="display:flex;gap:8px;margin-top:20px;">
+      <button class="btn btn-primary" onclick="closePanel()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Resend Notifications
+      </button>
+      <button class="btn btn-ghost" onclick="closePanel()">Close</button>
+    </div>
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+// ── RAG FILES ───────────────────────────────────────────────────────
+function renderRagFiles() {
+  document.getElementById('rag-files-table').innerHTML = RAG_FILES.map(f => `
+    <tr>
+      <td>${f.name}</td>
+      <td><span class="badge ok">${f.type}</span></td>
+      <td>${f.chunks}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteRagFile('${f.name}', this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Delete
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function deleteRagFile(name, btn) {
+  const row = btn.closest('tr');
+  row.style.opacity = '.3';
+  row.style.transition = 'opacity .3s';
+  setTimeout(() => {
+    const idx = RAG_FILES.findIndex(f => f.name === name);
+    if (idx > -1) RAG_FILES.splice(idx, 1);
+    renderRagFiles();
+  }, 400);
+}
+
+// ── FILE UPLOAD ─────────────────────────────────────────────────────
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.add('drag-over');
+}
+function handleDragLeave() {
+  document.getElementById('upload-zone').classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+}
+function handleFiles(files) {
+  Array.from(files).forEach(f => { uploadQueue.push(f); addFileToQueue(f); });
+}
+function addFileToQueue(file) {
+  const el = document.createElement('div');
+  el.className = 'file-item';
+  el.id = 'file-' + file.name.replace(/\W/g, '_');
+  el.innerHTML = `
+    <div class="file-icon-wrap">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+    <div class="file-info">
+      <div class="file-name">${file.name}</div>
+      <div class="file-size">${(file.size/1024).toFixed(0)} KB</div>
+    </div>
+    <span class="badge medium">Queued</span>
+  `;
+  document.getElementById('upload-queue').appendChild(el);
+}
+function clearQueue() {
+  uploadQueue = [];
+  document.getElementById('upload-queue').innerHTML = '';
+  document.getElementById('ingest-progress').classList.remove('visible');
+}
+
+// ── SIMULATED INGESTION ─────────────────────────────────────────────
+function startIngest() {
+  if (!uploadQueue.length) { alert('Add files first'); return; }
+  document.getElementById('ingest-progress').classList.add('visible');
+
+  const steps = ['step-load', 'step-chunk', 'step-embed', 'step-store'];
+  const bar = document.getElementById('ingest-bar');
+  let i = 0;
+
+  function nextStep() {
+    if (i > 0) {
+      const prev = document.getElementById(steps[i-1]);
+      prev.classList.remove('active');
+      prev.classList.add('done');
+    }
+    if (i >= steps.length) {
+      bar.style.width = '100%';
+      uploadQueue.forEach(f => {
+        const el = document.getElementById('file-' + f.name.replace(/\W/g, '_'));
+        if (el) { const b = el.querySelector('.badge'); b.className = 'badge ok'; b.textContent = 'Indexed'; }
+        RAG_FILES.push({ name: f.name, type: f.name.split('.').pop().toUpperCase(), chunks: Math.floor(Math.random()*200+50), size: (f.size/1024).toFixed(0)+' KB' });
+      });
+      uploadQueue = [];
+      renderRagFiles();
+      return;
+    }
+    document.getElementById(steps[i]).classList.add('active');
+    bar.style.width = ((i+1) / steps.length * 100) + '%';
+    i++;
+    setTimeout(nextStep, 1200 + Math.random()*600);
+  }
+  nextStep();
+}
+
+// ── SETTINGS ────────────────────────────────────────────────────────
+function updateEmail(role, val) {
+  const el = document.getElementById(role + '-email-display');
+  if (el) el.textContent = val || '(not set)';
+}
+function toggleRecipient(role, cb) {
+  const el = document.getElementById(role + '-email-display');
+  if (el) el.style.textDecoration = cb.checked ? 'none' : 'line-through';
+}
+function switchTemplate(name, btn) {
+  document.querySelectorAll('.tmpl-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tmpl-content').forEach(c => c.style.display = 'none');
+  btn.classList.add('active');
+  document.getElementById('tmpl-' + name).style.display = 'block';
+}
+function saveTemplates() {
+  const btn = event.currentTarget;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '✓ Saved';
+  btn.style.background = 'var(--green)';
+  setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1800);
+}
+function testSmtp() {
+  const btn = event.currentTarget;
+  btn.textContent = 'Sending…';
+  setTimeout(() => { btn.textContent = '✓ Test email sent'; btn.style.color = 'var(--green)'; }, 1500);
+  setTimeout(() => {
+    btn.innerHTML = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Test Email`;
+    btn.style.color = '';
+  }, 3200);
+}
+
+// ── CHARTS ──────────────────────────────────────────────────────────
+function generatePoints(n, min, max, noise) {
+  let v = (min + max) / 2;
+  return Array.from({ length: n }, () => {
+    v += (Math.random() - 0.5) * noise;
+    v = Math.max(min, Math.min(max, v));
+    return v;
+  });
+}
+
+function drawMainChart(noise = 80) {
+  const svg = document.getElementById('main-chart');
+  if (!svg) return;
+  const W = 600, H = 200;
+  const PAD = { top: 10, right: 10, bottom: 32, left: 44 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  const pts = generatePoints(60, 400, 1000, noise);
+  const minV = Math.floor(Math.min(...pts) / 100) * 100;
+  const maxV = Math.ceil(Math.max(...pts)  / 100) * 100;
+
+  const xScale = i  => PAD.left + (i / (pts.length - 1)) * cW;
+  const yScale = v  => PAD.top  + cH - ((v - minV) / (maxV - minV)) * cH;
+
+  const coords = pts.map((v, i) => [xScale(i), yScale(v)]);
+  const line   = coords.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
+  const area   = line + ` L${xScale(pts.length-1)},${PAD.top+cH} L${PAD.left},${PAD.top+cH} Z`;
+
+  // Y axis labels & grid lines (5 ticks)
+  const yTicks = 5;
+  let yLines = '', yLabels = '';
+  for (let t = 0; t <= yTicks; t++) {
+    const val = minV + (t / yTicks) * (maxV - minV);
+    const y   = yScale(val);
+    yLines  += `<line x1="${PAD.left}" y1="${y}" x2="${PAD.left + cW}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"/>`;
+    yLabels += `<text x="${PAD.left - 6}" y="${y + 4}" text-anchor="end" fill="var(--text-2)" font-size="9" font-family="IBM Plex Mono">${Math.round(val)}</text>`;
+  }
+
+  // X axis labels (every 10 points = ~10 min)
+  let xLabels = '';
+  const xStep = 10;
+  for (let i = 0; i < pts.length; i += xStep) {
+    const x   = xScale(i);
+    const min = (pts.length - 1 - i);
+    xLabels += `<text x="${x}" y="${H - 8}" text-anchor="middle" fill="var(--text-2)" font-size="9" font-family="IBM Plex Mono">-${min}m</text>`;
+  }
+  // "now" label
+  xLabels += `<text x="${xScale(pts.length-1)}" y="${H - 8}" text-anchor="middle" fill="var(--orange)" font-size="9" font-family="IBM Plex Mono">now</text>`;
+
+  // Anomaly highlight zone
+  const zoneX = xScale(28);
+  const zoneW = xScale(36) - xScale(28);
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="var(--orange)" stop-opacity=".22"/>
+        <stop offset="100%" stop-color="var(--orange)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${yLines}
+    <rect x="${zoneX}" y="${PAD.top}" width="${zoneW}" height="${cH}" fill="rgba(232,69,10,0.07)" rx="2"/>
+    <text x="${zoneX + zoneW/2}" y="${PAD.top + 12}" text-anchor="middle" fill="var(--orange)" font-size="8" font-family="IBM Plex Mono" opacity=".7">anomaly</text>
+    <path d="${area}" fill="url(#areaGrad)"/>
+    <path d="${line}" fill="none" stroke="var(--orange)" stroke-width="1.8" stroke-linejoin="round"/>
+    <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top+cH}" stroke="var(--border-lit)" stroke-width="1"/>
+    <line x1="${PAD.left}" y1="${PAD.top+cH}" x2="${PAD.left+cW}" y2="${PAD.top+cH}" stroke="var(--border-lit)" stroke-width="1"/>
+    ${yLabels}
+    ${xLabels}
+  `;
+}
+
+function drawSparkline(id, min, max, color) {
+  const svg = document.getElementById(id);
+  if (!svg) return;
+  const pts = generatePoints(20, min, max, (max - min) / 4);
+  const minV = Math.min(...pts), maxV = Math.max(...pts);
+  const coords = pts.map((v, i) => [
+    (i / (pts.length - 1)) * 80,
+    40 - ((v - minV) / (maxV - minV + 1)) * 36 - 2,
+  ]);
+  const line = coords.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
+  svg.innerHTML = `<path d="${line}" fill="none" stroke="${color || 'var(--orange)'}" stroke-width="1.5"/>`;
+}
+
+// ── LIVE UPDATE ──────────────────────────────────────────────────────
+function liveUpdate() {
+  const tp   = Math.round(780 + Math.random() * 120);
+  const lat  = (10 + Math.random() * 6).toFixed(0);
+  const loss = (0.2 + Math.random() * 0.3).toFixed(2);
+  document.getElementById('val-throughput').innerHTML = `${tp}<span class="unit">Mbps</span>`;
+  document.getElementById('val-latency').innerHTML    = `${lat}<span class="unit">ms</span>`;
+  document.getElementById('val-loss').innerHTML       = `${loss}<span class="unit">%</span>`;
+  drawMainChart();
+  drawSparkline('spark-throughput', 700, 1000, 'var(--green)');
+}
+
+// ── THEME ─────────────────────────────────────────────────────────────
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+}
+
+// ── CHART TIME BUTTONS ─────────────────────────────────────────────────
+function setChartRange(range, btn) {
+  document.querySelectorAll('.chart-time-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // redraw with different noise to simulate different range
+  const noise = range === '1H' ? 60 : range === '6H' ? 100 : 140;
+  drawMainChart(noise);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // restore theme
+  if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
+
+  renderAlerts(document.getElementById('dashboard-alerts'), ALERTS.slice(0, 3));
+  renderAlerts(document.getElementById('alerts-list'), ALERTS);
+  renderRagFiles();
+  liveUpdate();
+  setInterval(liveUpdate, 4000);
+
+  // default active chart btn
+  document.querySelector('.chart-time-btn')?.classList.add('active');
+});
