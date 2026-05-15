@@ -372,15 +372,41 @@ async function testSmtp(){
 }
 
 // ── CHAT ──────────────────────────────────────────────────────────
+let _chatBusy = false;
 async function sendChat() {
-  const inp=document.getElementById('chat-input'),q=inp.value.trim(); if(!q) return;
-  inp.value=''; document.getElementById('chat-suggestions').style.display='none';
-  _msg(q,'user'); const lid=_msg('Thinking...','assistant loading');
+  if (_chatBusy) return;
+  const inp = document.getElementById('chat-input');
+  const q   = inp.value.trim();
+  if (!q) return;
+
+  _chatBusy = true;
+  inp.value = '';
+  inp.disabled = true;
+  document.getElementById('chat-suggestions').style.display = 'none';
+
+  _msg(q, 'user');
+  const lid = _msg('Thinking...', 'assistant loading');
+
   try {
-    const res=await fetch(API_BASE+'/query/general',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
-    if(!res.ok){const e=await res.json().catch(()=>({}));_upd(lid,'Error: '+(e.detail||res.status));return;}
-    const d=await res.json(); _upd(lid,d.answer||'No response from RAG.');
-  } catch(_){_upd(lid,'Cannot reach the RAG API.');}
+    const res = await fetch(API_BASE + '/query/general', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q }),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      _upd(lid, 'Error: ' + (e.detail || res.status));
+    } else {
+      const d = await res.json();
+      _upd(lid, d.answer || 'No response from RAG.');
+    }
+  } catch (_) {
+    _upd(lid, 'Cannot reach the RAG API.');
+  } finally {
+    _chatBusy = false;
+    inp.disabled = false;
+    inp.focus();
+  }
 }
 function sendSuggestion(btn){document.getElementById('chat-input').value=btn.textContent;btn.remove();sendChat();}
 function _md(text) {

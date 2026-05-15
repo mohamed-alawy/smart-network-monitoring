@@ -530,8 +530,8 @@ We apologize for the inconvenience.</textarea>
 
       <!-- input -->
       <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px;">
-        <input id="chat-input" class="input-field" placeholder="اسأل عن أي مشكلة في الشبكة..."
-          style="flex:1;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}" />
+        <input id="chat-input" class="input-field" placeholder="Ask about a network issue or 3GPP spec..."
+          style="flex:1;direction:ltr;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}" />
         <button class="btn btn-primary" onclick="sendChat()" id="chat-send-btn">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           Send
