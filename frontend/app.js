@@ -685,11 +685,12 @@ function startIngest() {
 // في Codespaces الـ URL بيكون مختلف — بنبني الـ API URL من الـ current host
 const API_BASE = (() => {
   const h = window.location.hostname;
-  // Codespaces: hostname زي ominous-succotash-x5j7vrjv9ww6hp7xp-3000.app.github.dev
+  // Codespaces
   if (h.includes('app.github.dev')) {
     return window.location.origin.replace('-3000.', '-8000.');
   }
-  return 'http://localhost:8000';
+  // Docker — nginx proxies /api/ to rag_api:8000
+  return window.location.origin + '/api';
 })();
 
 async function loadConfig() {

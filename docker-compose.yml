@@ -8,6 +8,9 @@ services:
       - "3000:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - rag_api
     restart: unless-stopped
 
   weaviate:
