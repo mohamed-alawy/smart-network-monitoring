@@ -22,9 +22,9 @@ pyyaml==6.0.2
 pandas==2.2.3
 numpy==1.26.4
 
-# RAGAS evaluation
-ragas==0.1.21
-datasets==2.21.0
+# ML inference
+joblib==1.4.2
+scikit-learn==1.5.2
 
 # Utilities
 python-dotenv==1.0.1
