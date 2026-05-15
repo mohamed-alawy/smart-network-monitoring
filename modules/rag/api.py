@@ -433,37 +433,66 @@ def _load_json(filename: str):
         return json.load(f)
 
 
-@app.post("/run-pipeline")
-async def run_pipeline(background_tasks: BackgroundTasks):
+@app.post("/predict")
+async def predict(records: List[AnomalyRecord]):
     """
-    يشغّل الـ ML anomaly detection pipeline على بيانات Vienna.
-    بيشتغل in background ويحدّث الـ ml_data/ folder.
+    Run inference using saved best_model.pkl + scaler.pkl on incoming records.
+    Returns predictions with anomaly scores, then routes to RAG + notifications.
     """
-    def _run():
-        import sys
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "modules" / "ml"))
-        try:
-            from ml_anomaly_detection import run_ml_pipeline
-            import shutil
-            summary = run_ml_pipeline()
-            # انسخ النتايج لـ ml_data
-            ml_src = Path(__file__).parent.parent.parent / "modules" / "ml" / "data"
-            ml_dst = DATA_DIR
-            ml_dst.mkdir(exist_ok=True)
-            for fname in ["summary_stats.json", "model_comparison.json",
-                          "anomalies_only.json", "alert_dispatch_state.json"]:
-                src = ml_src / fname
-                if src.exists():
-                    shutil.copy(src, ml_dst / fname)
-            logger.success(f"Pipeline complete: {summary['anomaly_count']} anomalies found")
-        except Exception as e:
-            logger.error(f"Pipeline failed: {e}")
+    import joblib
+    import numpy as np
 
-    background_tasks.add_task(_run)
-    return {"status": "pipeline started", "message": "Check /data/summary for results when done"}
+    model_path  = DATA_DIR / "best_model.pkl"
+    scaler_path = DATA_DIR / "scaler.pkl"
+
+    if not model_path.exists() or not scaler_path.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="Model files not found in ml_data/. Copy best_model.pkl and scaler.pkl there."
+        )
+
+    model  = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
+
+    FEATURES = [
+        "rsrp_dbm", "rsrq_db", "sinr_db", "dl_throughput_mbps",
+    ]
+
+    results = []
+    for r in records:
+        row = [
+            r.rsrp_dbm or 0.0,
+            r.rsrq_db  or 0.0,
+            r.sinr_db  or 0.0,
+            r.dl_throughput_mbps or 0.0,
+        ]
+        X      = scaler.transform([row])
+        pred   = int(model.predict(X)[0])
+        score  = float(model.predict_proba(X)[0][1]) if hasattr(model, "predict_proba") else float(pred)
+        sev    = "critical" if score >= 0.8 else "high" if score >= 0.6 else "medium" if pred else "low"
+
+        results.append({
+            "measurement_id": r.measurement_id,
+            "is_anomaly":     bool(pred),
+            "ml_anomaly_score": round(score, 4),
+            "severity":       sev,
+        })
+
+    anomalies = [
+        AnomalyRecord(**{**r.__dict__, "severity": res["severity"], "ml_anomaly_score": res["ml_anomaly_score"]})
+        for r, res in zip(records, results) if res["is_anomaly"]
+    ]
+
+    rag_result = None
+    if anomalies:
+        analyze_resp = await analyze(anomalies)
+        rag_result = analyze_resp.rag_result
 
 
+    return {"predictions": results, "anomalies_detected": len(anomalies), "rag_result": rag_result}
 
+
+@app.get("/data/summary")
 async def data_summary():
     return _load_json("summary_stats.json")
 
