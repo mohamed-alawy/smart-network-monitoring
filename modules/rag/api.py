@@ -462,23 +462,24 @@ async def predict(records: List[AnomalyRecord]):
         z_sinr = (sinr - STATS["sinr"]["mean"]) / STATS["sinr"]["std"]
         z_dl   = (dl   - STATS["dl"]["mean"])   / STATS["dl"]["std"]
 
-        # Count how many KPIs are significantly below normal (Z < -1.5)
-        degraded = sum([
-            z_rsrp < -1.5,
-            z_rsrq < -1.5,
-            z_sinr < -1.5,
-            z_dl   < -1.5,
-        ])
+        # Severity contribution per metric (0 if normal, escalates with deviation)
+        def metric_score(z, threshold=-1.5):
+            if z >= threshold:
+                return 0.0
+            return min(1.0, (threshold - z) / 2.0)  # 0→1 as z goes from -1.5 to -3.5
 
-        # Weighted anomaly score
-        severity_score = (
-            max(0, -z_rsrp) * 0.35 +
-            max(0, -z_rsrq) * 0.25 +
-            max(0, -z_sinr) * 0.25 +
-            max(0, -z_dl)   * 0.15
-        )
-        score = min(1.0, severity_score / 4.0)  # normalize to 0-1
-        is_anomaly = degraded >= 2 or score > 0.4
+        s_rsrp = metric_score(z_rsrp)
+        s_rsrq = metric_score(z_rsrq)
+        s_sinr = metric_score(z_sinr)
+        s_dl   = metric_score(z_dl)
+
+        degraded = sum([s_rsrp > 0, s_rsrq > 0, s_sinr > 0, s_dl > 0])
+
+        # Weighted score
+        score = min(1.0, s_rsrp * 0.35 + s_rsrq * 0.30 + s_sinr * 0.25 + s_dl * 0.10)
+
+        # Anomaly if any single KPI is strongly degraded OR 2+ are mildly degraded
+        is_anomaly = score > 0.15 or degraded >= 2
 
         return is_anomaly, round(float(score), 4)
 
