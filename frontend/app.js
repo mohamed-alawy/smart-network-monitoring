@@ -972,7 +972,110 @@ function _updateMsg(id, text) {
 }
 
 // ── ANALYZE (ML → RAG) ───────────────────────────────────────────────
-async function sendToAnalyze() {
+// ── LIVE DEMO ────────────────────────────────────────────────────────
+const DEMO_SCENARIOS = {
+  critical: {
+    severity: 'critical', ml_anomaly_score: 0.91,
+    location: 'Westbahnhof, Vienna', cell_id: '107011',
+    anomaly_types: ['High path loss (123 dB)', 'RSRP deviation detected (-113.4 dBm)'],
+    root_causes: ['Extreme signal weakness - possible coverage hole or hardware fault', 'Excessive propagation loss - indoor or behind obstacle'],
+    rsrp_dbm: -113.4, rsrq_db: -24.3, sinr_db: -12.7, dl_throughput_mbps: 0.0,
+  },
+  high: {
+    severity: 'high', ml_anomaly_score: 0.74,
+    location: 'Mariahilfer Strasse, Vienna', cell_id: '129795',
+    anomaly_types: ['RSRQ deviation detected (-18.9 dB)', 'Composite signal quality degradation'],
+    root_causes: ['Severe interference - PCI conflict or external RF source', 'Overall signal quality index below acceptable'],
+    rsrp_dbm: -102.6, rsrq_db: -18.9, sinr_db: -4.3, dl_throughput_mbps: 7.4,
+  },
+  medium: {
+    severity: 'medium', ml_anomaly_score: 0.52,
+    location: 'Karlsplatz, Vienna', cell_id: '163341',
+    anomaly_types: ['ML-detected statistical anomaly', 'Multi-metric degradation (2 KPIs below normal)'],
+    root_causes: ['Pattern deviation detected by AI - subtle metric combination unusual'],
+    rsrp_dbm: -97.4, rsrq_db: -14.4, sinr_db: 0.4, dl_throughput_mbps: 23.5,
+  },
+};
+
+let _demoRecord = null;
+
+function runDemo(type) {
+  if (type === 'replay') {
+    const real = REAL_ANOMALIES.find(r => r.severity === 'critical') || REAL_ANOMALIES[0];
+    if (!real) { document.getElementById('demo-status').textContent = 'No real data loaded yet'; return; }
+    _demoRecord = [{
+      severity:         real.severity,
+      ml_anomaly_score: real.ml_anomaly_score,
+      location:         `${real.area_name}, ${real.district}`,
+      cell_id:          String(real.cell_id),
+      anomaly_types:    real.anomaly_types,
+      root_causes:      real.root_causes,
+      rsrp_dbm:         real.rsrp_dbm,
+      rsrq_db:          real.rsrq_db,
+      sinr_db:          real.sinr_db,
+      dl_throughput_mbps: real.dl_throughput_mbps,
+    }];
+  } else {
+    _demoRecord = [DEMO_SCENARIOS[type]];
+  }
+
+  document.getElementById('demo-preview').textContent = JSON.stringify(_demoRecord[0], null, 2);
+  document.getElementById('demo-run-btn').disabled = false;
+  document.getElementById('demo-status').textContent = 'Ready — click Run & Analyze';
+  document.getElementById('demo-result').style.display = 'none';
+}
+
+async function submitDemo() {
+  if (!_demoRecord) return;
+  const btn = document.getElementById('demo-run-btn');
+  const status = document.getElementById('demo-status');
+
+  btn.disabled = true;
+  btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Analyzing…';
+  status.textContent = 'Sending to RAG pipeline…';
+  status.style.color = 'var(--orange)';
+
+  try {
+    const res  = await fetch(`${API_BASE}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_demoRecord),
+    });
+    const data = await res.json();
+
+    const rag  = data.rag_result || {};
+    const notif = data.notification || {};
+
+    document.getElementById('demo-cause').textContent =
+      rag.cause_explanation || 'No explanation returned (RAG knowledge base may be empty)';
+    document.getElementById('demo-eta').textContent =
+      rag.estimated_resolution_time ? `ETA: ${rag.estimated_resolution_time}` : '';
+
+    const notified = notif.recipients_notified || [];
+    document.getElementById('demo-notified').innerHTML = notified.length
+      ? notified.map(r => `<span class="badge ok" style="margin-right:4px;">✓ ${r}</span>`).join('')
+      : '<span style="color:var(--text-2);">No emails configured — check Settings</span>';
+
+    const errors = notif.errors || [];
+    document.getElementById('demo-errors').textContent = errors.join(' | ');
+
+    const steps = rag.suggested_solution || [];
+    document.getElementById('demo-steps').innerHTML = steps.length
+      ? steps.map((s, i) => `<div style="margin-bottom:4px;"><span style="color:var(--orange);font-weight:600;">${i+1}.</span> ${s}</div>`).join('')
+      : 'No steps returned.';
+
+    document.getElementById('demo-result').style.display = 'block';
+    status.textContent = `Done — ${data.processed} record analyzed, ${notified.length} notified`;
+    status.style.color = 'var(--green)';
+
+  } catch (e) {
+    status.textContent = `Error: ${e.message}`;
+    status.style.color = 'var(--red)';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run & Analyze';
+}
   const raw = document.getElementById('ml-output-input').value.trim();
   const resultEl  = document.getElementById('analyze-result');
   const resultJSON = document.getElementById('analyze-result-json');

@@ -641,32 +641,73 @@ We apologize for the inconvenience.</textarea>
           <svg id="feature-importance-chart" width="100%" viewBox="0 0 440 180" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
       </div>
-      <div class="card-header">
-        <span class="card-title">Send to RAG Pipeline</span>
-        <span style="font-size:.72rem;color:var(--text-2);">POST /analyze</span>
-      </div>
-      <div class="card-body">
-        <div style="font-size:.8rem;color:var(--text-1);margin-bottom:14px;">
-          أرسل output من الـ ML model مباشرة للـ RAG Pipeline—هيحلله ويبعت notifications تلقائياً.
+
+      <!-- LIVE DEMO TEST PANEL -->
+      <div class="card" style="margin-top:14px;border-color:var(--orange-lo);">
+        <div class="card-header">
+          <span class="card-title">Live Demo — Test the Model</span>
+          <span style="font-size:.72rem;color:var(--text-2);">Pick a scenario → watch RAG + alerts fire</span>
         </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-          <div style="flex:1;min-width:280px;">
-            <label class="input-label">Paste ML Output (JSON array)</label>
-            <textarea id="ml-output-input" class="template-textarea" style="min-height:120px;font-size:.72rem;"
-              placeholder='[{"severity":"high","ml_anomaly_score":0.82,"location":"Cairo Cell-07","anomaly_types":["RSRP deviation"],"root_causes":["Coverage hole"],"rsrp_dbm":-115}]'></textarea>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px;padding-top:22px;">
-            <button class="btn btn-primary" onclick="sendToAnalyze()">
-              <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              Send to RAG
+        <div class="card-body">
+
+          <!-- Scenario buttons -->
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+            <button class="btn btn-ghost" onclick="runDemo('critical')">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              Critical — Coverage Hole
+            </button>
+            <button class="btn btn-ghost" onclick="runDemo('high')">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              High — Interference
+            </button>
+            <button class="btn btn-ghost" onclick="runDemo('medium')">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+              Medium — Throughput Drop
+            </button>
+            <button class="btn btn-ghost" onclick="runDemo('replay')" title="Replay last real anomaly from Vienna data">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+              Replay Real Anomaly
             </button>
           </div>
-        </div>
-        <div id="analyze-result" style="display:none;margin-top:14px;padding:12px;background:var(--bg-2);border-radius:var(--radius);border:1px solid var(--border);">
-          <div style="font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Result</div>
-          <pre id="analyze-result-json" style="font-size:.72rem;color:var(--text-0);white-space:pre-wrap;line-height:1.6;"></pre>
+
+          <!-- Record preview -->
+          <div style="margin-bottom:12px;">
+            <label class="input-label">Record being sent</label>
+            <pre id="demo-preview" style="font-size:.72rem;color:var(--text-1);background:var(--bg-0);padding:10px;border-radius:var(--radius);border:1px solid var(--border);white-space:pre-wrap;line-height:1.6;max-height:140px;overflow-y:auto;">Click a scenario to preview</pre>
+          </div>
+
+          <!-- Run button + status -->
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="demo-run-btn" onclick="submitDemo()" disabled>
+              <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Run & Analyze
+            </button>
+            <div id="demo-status" style="font-size:.78rem;color:var(--text-2);">Select a scenario first</div>
+          </div>
+
+          <!-- Result -->
+          <div id="demo-result" style="display:none;margin-top:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <div style="padding:12px;background:var(--bg-2);border-radius:var(--radius);border:1px solid var(--border);">
+                <div class="input-label" style="margin-bottom:6px;">RAG Analysis</div>
+                <div id="demo-cause" style="font-size:.8rem;color:var(--text-0);line-height:1.5;"></div>
+                <div id="demo-eta"   style="font-size:.75rem;color:var(--text-2);margin-top:6px;"></div>
+              </div>
+              <div style="padding:12px;background:var(--bg-2);border-radius:var(--radius);border:1px solid var(--border);">
+                <div class="input-label" style="margin-bottom:6px;">Notifications Sent</div>
+                <div id="demo-notified" style="font-size:.82rem;color:var(--text-0);"></div>
+                <div id="demo-errors"   style="font-size:.75rem;color:var(--red);margin-top:4px;"></div>
+              </div>
+            </div>
+            <div style="padding:10px 12px;background:var(--bg-2);border-radius:var(--radius);border:1px solid var(--border);">
+              <div class="input-label" style="margin-bottom:6px;">Suggested Steps</div>
+              <div id="demo-steps" style="font-size:.78rem;color:var(--text-1);line-height:1.7;"></div>
+            </div>
+          </div>
+
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -680,16 +721,7 @@ We apologize for the inconvenience.</textarea>
   <div class="detail-body" id="panel-body"></div>
 </div>
 
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="footer-status">
-    <span class="pulse-ring"></span>
-    RAG API · <span style="color:var(--green);">Connected</span>
-    &nbsp;|&nbsp; Weaviate · <span style="color:var(--green);">Ready</span>
-    &nbsp;|&nbsp; Model · <span style="color:var(--text-2);">Pending integration</span>
-  </div>
-  <div>NetPulse v2.0 · Gemini-powered</div>
-</footer>
+<!-- FOOTER removed -->
 
 </div><!-- .shell -->
 <script src="app.js"></script>
