@@ -1,0 +1,1499 @@
+{
+  "total_dispatched": 256,
+  "last_dispatch_time": "2026-05-15T01:09:23.142829",
+  "channels": {
+    "email": {
+      "enabled": true,
+      "dispatched": 256,
+      "coverage_rate": "100%"
+    },
+    "sms": {
+      "enabled": true,
+      "dispatched": 52,
+      "coverage_rate": "100%"
+    },
+    "push": {
+      "enabled": true,
+      "dispatched": 256,
+      "coverage_rate": "100%"
+    }
+  },
+  "teams": {
+    "noc_support": {
+      "dispatched": 256,
+      "role": "NOC Support Team"
+    },
+    "field_engineers": {
+      "dispatched": 103,
+      "role": "Field Engineering"
+    }
+  },
+  "recent_dispatches": [
+    {
+      "alert_id": 29,
+      "severity": "critical",
+      "area": "Westbahnhof",
+      "cell_id": 107011,
+      "timestamp": "2026-05-15T01:09:22.829643",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Westbahnhof - Cell 107011",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Westbahnhof, Cell 107011. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 49,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 107021,
+      "timestamp": "2026-05-15T01:09:23.111201",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 53,
+      "severity": "high",
+      "area": "Westbahnhof",
+      "cell_id": 107021,
+      "timestamp": "2026-05-15T01:09:23.111362",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[HIGH] LTE Anomaly - Westbahnhof - Cell 107021",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - High",
+          "message": "4 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 55,
+      "severity": "high",
+      "area": "Westbahnhof",
+      "cell_id": 132353,
+      "timestamp": "2026-05-15T01:09:23.111488",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[HIGH] LTE Anomaly - Westbahnhof - Cell 132353",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - High",
+          "message": "5 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 58,
+      "severity": "high",
+      "area": "Westbahnhof",
+      "cell_id": 132353,
+      "timestamp": "2026-05-15T01:09:23.111811",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[HIGH] LTE Anomaly - Westbahnhof - Cell 132353",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - High",
+          "message": "2 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 81,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132353,
+      "timestamp": "2026-05-15T01:09:23.111906",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "5 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 215,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132353,
+      "timestamp": "2026-05-15T01:09:23.111995",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 280,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132353,
+      "timestamp": "2026-05-15T01:09:23.112082",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 286,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132353,
+      "timestamp": "2026-05-15T01:09:23.112167",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "3 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 343,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132353,
+      "timestamp": "2026-05-15T01:09:23.112254",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 394,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132353,
+      "timestamp": "2026-05-15T01:09:23.112340",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "4 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 395,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132363,
+      "timestamp": "2026-05-15T01:09:23.112427",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 396,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132363,
+      "timestamp": "2026-05-15T01:09:23.112513",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "3 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 397,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132363,
+      "timestamp": "2026-05-15T01:09:23.112621",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "4 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 399,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132363,
+      "timestamp": "2026-05-15T01:09:23.112709",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 400,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132363,
+      "timestamp": "2026-05-15T01:09:23.112795",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 401,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132363,
+      "timestamp": "2026-05-15T01:09:23.112880",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 402,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132363,
+      "timestamp": "2026-05-15T01:09:23.112964",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "3 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 473,
+      "severity": "critical",
+      "area": "Westbahnhof",
+      "cell_id": 132365,
+      "timestamp": "2026-05-15T01:09:23.113050",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Westbahnhof - Cell 132365",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Westbahnhof, Cell 132365. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 599,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132364,
+      "timestamp": "2026-05-15T01:09:23.113321",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 603,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132364,
+      "timestamp": "2026-05-15T01:09:23.113420",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 624,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132365,
+      "timestamp": "2026-05-15T01:09:23.113509",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 625,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 163341,
+      "timestamp": "2026-05-15T01:09:23.113598",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 887,
+      "severity": "critical",
+      "area": "Westbahnhof",
+      "cell_id": 132365,
+      "timestamp": "2026-05-15T01:09:23.113684",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Westbahnhof - Cell 132365",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Westbahnhof, Cell 132365. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 967,
+      "severity": "critical",
+      "area": "Westbahnhof",
+      "cell_id": 1213963,
+      "timestamp": "2026-05-15T01:09:23.113774",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Westbahnhof - Cell 1213963",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Westbahnhof, Cell 1213963. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "2 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1029,
+      "severity": "critical",
+      "area": "Westbahnhof",
+      "cell_id": 132364,
+      "timestamp": "2026-05-15T01:09:23.113865",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Westbahnhof - Cell 132364",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Westbahnhof, Cell 132364. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1153,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132365,
+      "timestamp": "2026-05-15T01:09:23.113953",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1179,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 132364,
+      "timestamp": "2026-05-15T01:09:23.114040",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1410,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 167181,
+      "timestamp": "2026-05-15T01:09:23.114127",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1420,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 1629699,
+      "timestamp": "2026-05-15T01:09:23.114215",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1423,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 1629699,
+      "timestamp": "2026-05-15T01:09:23.114301",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "2 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1430,
+      "severity": "critical",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 1629699,
+      "timestamp": "2026-05-15T01:09:23.114388",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Mariahilfer Strasse - Cell 1629699",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Mariahilfer Strasse, Cell 1629699. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1432,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 1629699,
+      "timestamp": "2026-05-15T01:09:23.114477",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1436,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 1629699,
+      "timestamp": "2026-05-15T01:09:23.114563",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1455,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 1629699,
+      "timestamp": "2026-05-15T01:09:23.114667",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1475,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 1629699,
+      "timestamp": "2026-05-15T01:09:23.114754",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1476,
+      "severity": "medium",
+      "area": "Westbahnhof",
+      "cell_id": 1629699,
+      "timestamp": "2026-05-15T01:09:23.114839",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Westbahnhof",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1503,
+      "severity": "critical",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 1629704,
+      "timestamp": "2026-05-15T01:09:23.114925",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Mariahilfer Strasse - Cell 1629704",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Mariahilfer Strasse, Cell 1629704. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "3 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1517,
+      "severity": "critical",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 163334,
+      "timestamp": "2026-05-15T01:09:23.115014",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Mariahilfer Strasse - Cell 163334",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Mariahilfer Strasse, Cell 163334. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "6 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1526,
+      "severity": "critical",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115103",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Mariahilfer Strasse - Cell 129795",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Mariahilfer Strasse, Cell 129795. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "3 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1556,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115193",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1640,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115279",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1641,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115365",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1644,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115451",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1645,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115536",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1773,
+      "severity": "critical",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115621",
+      "channels_sent": [
+        {
+          "channel": "email",
+          "to": "noc-team@telecom-operator.com",
+          "subject": "[CRITICAL] LTE Anomaly - Mariahilfer Strasse - Cell 129795",
+          "status": "sent"
+        },
+        {
+          "channel": "sms",
+          "to": "+43-XXX-XXX-XXXX",
+          "message": "CRITICAL: LTE anomaly at Mariahilfer Strasse, Cell 129795. Immediate action required.",
+          "status": "sent"
+        },
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Critical",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "30 min"
+        },
+        {
+          "team": "field_engineers",
+          "role": "Field Engineering",
+          "action": "investigate",
+          "sla": "30 min"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1774,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115711",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1796,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115797",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1797,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115883",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    },
+    {
+      "alert_id": 1805,
+      "severity": "medium",
+      "area": "Mariahilfer Strasse",
+      "cell_id": 129795,
+      "timestamp": "2026-05-15T01:09:23.115968",
+      "channels_sent": [
+        {
+          "channel": "push",
+          "target": "NOC Dashboard",
+          "title": "LTE Alert - Medium",
+          "message": "1 anomaly types detected at Mariahilfer Strasse",
+          "status": "delivered"
+        }
+      ],
+      "teams_notified": [
+        {
+          "team": "noc_support",
+          "role": "NOC Support",
+          "action": "monitor",
+          "sla": "2 hours"
+        }
+      ],
+      "status": "dispatched"
+    }
+  ]
+}

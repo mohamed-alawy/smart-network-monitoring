@@ -1,0 +1,249 @@
+{
+  "pipeline_type": "unsupervised-first",
+  "unsupervised_contamination": 0.08,
+  "ensemble_anomaly_rate": 5.12,
+  "models_evaluated": [
+    "Isolation Forest (unsup)",
+    "LOF (unsup)",
+    "Autoencoder (unsup)",
+    "Ensemble (unsup)",
+    "XGBoost (supervised)",
+    "Random Forest (supervised)"
+  ],
+  "best_model": "Ensemble (unsup)",
+  "best_f1_score": 1.0,
+  "metrics": {
+    "Isolation Forest (unsup)": {
+      "f1_score": 0.4464,
+      "precision": 0.4098,
+      "recall": 0.4902,
+      "accuracy": 0.938,
+      "auc_pr": 0.3533,
+      "confusion_matrix": {
+        "tn": 913,
+        "fp": 36,
+        "fn": 26,
+        "tp": 25
+      }
+    },
+    "LOF (unsup)": {
+      "f1_score": 0.6942,
+      "precision": 0.6,
+      "recall": 0.8235,
+      "accuracy": 0.963,
+      "auc_pr": 0.7098,
+      "confusion_matrix": {
+        "tn": 921,
+        "fp": 28,
+        "fn": 9,
+        "tp": 42
+      }
+    },
+    "Autoencoder (unsup)": {
+      "f1_score": 0.6829,
+      "precision": 0.5833,
+      "recall": 0.8235,
+      "accuracy": 0.961,
+      "auc_pr": 0.7355,
+      "confusion_matrix": {
+        "tn": 919,
+        "fp": 30,
+        "fn": 9,
+        "tp": 42
+      }
+    },
+    "Ensemble (unsup)": {
+      "f1_score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "accuracy": 1.0,
+      "auc_pr": 0.6001,
+      "confusion_matrix": {
+        "tn": 949,
+        "fp": 0,
+        "fn": 0,
+        "tp": 51
+      }
+    },
+    "XGBoost (supervised)": {
+      "f1_score": 0.6265,
+      "precision": 0.8125,
+      "recall": 0.5098,
+      "accuracy": 0.969,
+      "auc_pr": 0.7166,
+      "confusion_matrix": {
+        "tn": 943,
+        "fp": 6,
+        "fn": 25,
+        "tp": 26
+      }
+    },
+    "Random Forest (supervised)": {
+      "f1_score": 0.4578,
+      "precision": 0.5938,
+      "recall": 0.3725,
+      "accuracy": 0.955,
+      "auc_pr": 0.5904,
+      "confusion_matrix": {
+        "tn": 936,
+        "fp": 13,
+        "fn": 32,
+        "tp": 19
+      }
+    }
+  },
+  "feature_importance_xgb": [
+    {
+      "feature": "throughput_ratio",
+      "importance": 0.1495
+    },
+    {
+      "feature": "azimuth_deg",
+      "importance": 0.0923
+    },
+    {
+      "feature": "signal_noise_gap",
+      "importance": 0.0914
+    },
+    {
+      "feature": "height_m",
+      "importance": 0.0854
+    },
+    {
+      "feature": "sinr_db",
+      "importance": 0.0742
+    },
+    {
+      "feature": "rsrq_db",
+      "importance": 0.0654
+    },
+    {
+      "feature": "rsrp_dbm",
+      "importance": 0.0611
+    },
+    {
+      "feature": "dl_throughput_mbps",
+      "importance": 0.0607
+    },
+    {
+      "feature": "signal_quality_index",
+      "importance": 0.0562
+    },
+    {
+      "feature": "ul_throughput_mbps",
+      "importance": 0.0552
+    },
+    {
+      "feature": "rssi_dbm",
+      "importance": 0.045
+    },
+    {
+      "feature": "pathloss_db",
+      "importance": 0.0449
+    },
+    {
+      "feature": "timing_advance",
+      "importance": 0.0416
+    },
+    {
+      "feature": "frequency_khz",
+      "importance": 0.0385
+    },
+    {
+      "feature": "efficiency",
+      "importance": 0.0385
+    }
+  ],
+  "feature_importance_rf": [
+    {
+      "feature": "throughput_ratio",
+      "importance": 0.1919
+    },
+    {
+      "feature": "dl_throughput_mbps",
+      "importance": 0.1037
+    },
+    {
+      "feature": "signal_noise_gap",
+      "importance": 0.0985
+    },
+    {
+      "feature": "rsrq_db",
+      "importance": 0.0883
+    },
+    {
+      "feature": "efficiency",
+      "importance": 0.0757
+    },
+    {
+      "feature": "signal_quality_index",
+      "importance": 0.0743
+    },
+    {
+      "feature": "ul_throughput_mbps",
+      "importance": 0.0684
+    },
+    {
+      "feature": "rsrp_dbm",
+      "importance": 0.0679
+    },
+    {
+      "feature": "sinr_db",
+      "importance": 0.0668
+    },
+    {
+      "feature": "rssi_dbm",
+      "importance": 0.0556
+    },
+    {
+      "feature": "pathloss_db",
+      "importance": 0.0318
+    },
+    {
+      "feature": "azimuth_deg",
+      "importance": 0.0289
+    },
+    {
+      "feature": "height_m",
+      "importance": 0.02
+    },
+    {
+      "feature": "timing_advance",
+      "importance": 0.0183
+    },
+    {
+      "feature": "frequency_khz",
+      "importance": 0.0097
+    }
+  ],
+  "data_info": {
+    "total_records": 4998,
+    "features_used": [
+      "rsrp_dbm",
+      "rsrq_db",
+      "rssi_dbm",
+      "sinr_db",
+      "pathloss_db",
+      "dl_throughput_mbps",
+      "ul_throughput_mbps",
+      "timing_advance",
+      "frequency_khz",
+      "height_m",
+      "azimuth_deg",
+      "signal_quality_index",
+      "throughput_ratio",
+      "efficiency",
+      "signal_noise_gap"
+    ],
+    "unsupervised_models": [
+      "Isolation Forest",
+      "LOF",
+      "Autoencoder"
+    ],
+    "supervised_models": [
+      "XGBoost",
+      "Random Forest"
+    ],
+    "final_anomaly_rate": 5.12
+  }
+}

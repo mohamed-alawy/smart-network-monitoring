@@ -1,0 +1,78 @@
+{
+  "total_measurements": 4998,
+  "anomaly_count": 256,
+  "normal_count": 4742,
+  "anomaly_rate": 5.12,
+  "severity_distribution": {
+    "critical": 52,
+    "high": 51,
+    "medium": 153,
+    "low": 4742
+  },
+  "unique_cells": 46,
+  "unique_enbs": 17,
+  "unique_areas": 4,
+  "date_range": {
+    "start": "2024-10-13 14:59:59",
+    "end": "2024-10-13 15:52:27"
+  },
+  "detection_model": "Ensemble (unsup)",
+  "model_f1_score": 1.0,
+  "all_model_f1_scores": {
+    "Isolation Forest (unsup)": 0.4464,
+    "LOF (unsup)": 0.6942,
+    "Autoencoder (unsup)": 0.6829,
+    "Ensemble (unsup)": 1.0,
+    "XGBoost (supervised)": 0.6265,
+    "Random Forest (supervised)": 0.4578
+  },
+  "pipeline_type": "unsupervised-first",
+  "unsupervised_contamination": 0.08,
+  "ensemble_anomaly_rate": 5.12,
+  "rsrp_stats": {
+    "min": -113.4,
+    "max": -66.1,
+    "mean": -90.11,
+    "median": -90.6
+  },
+  "rsrq_stats": {
+    "min": -24.3,
+    "max": -4.6,
+    "mean": -14.8,
+    "median": -14.6
+  },
+  "sinr_stats": {
+    "min": -12.7,
+    "max": 27.5,
+    "mean": 5.61,
+    "median": 5.2
+  },
+  "dl_throughput_stats": {
+    "min": 0.0,
+    "max": 121.7,
+    "mean": 34.54
+  },
+  "ul_throughput_stats": {
+    "min": 0.0,
+    "max": 3.9,
+    "mean": 0.2196
+  },
+  "top_anomaly_areas": {
+    "Westbahnhof": 146,
+    "Mariahilfer Strasse": 98,
+    "Karlsplatz": 7,
+    "Naschmarkt": 5
+  },
+  "anomaly_types_distribution": {
+    "ML-detected statistical anomaly": 180,
+    "Composite signal quality degradation": 58,
+    "Multi-metric degradation (3 KPIs below normal)": 34,
+    "Multi-metric degradation (2 KPIs below normal)": 25,
+    "High path loss (123 dB)": 7,
+    "High path loss (120 dB)": 7,
+    "High path loss (119 dB)": 6,
+    "RSRQ deviation detected (-18.9 dB)": 5,
+    "High path loss (121 dB)": 5,
+    "High path loss (124 dB)": 4
+  }
+}

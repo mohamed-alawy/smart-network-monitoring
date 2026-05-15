@@ -43,9 +43,11 @@ services:
       - .env
     environment:
       WEAVIATE_URL: http://weaviate:8080
+      ML_DATA_DIR: /app/ml_data
     volumes:
       - ./data:/app/data
       - ./modules:/app/modules
+      - ./ml_data:/app/ml_data:ro
     depends_on:
       weaviate:
         condition: service_healthy

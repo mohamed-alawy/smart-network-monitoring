@@ -1,8 +1,9 @@
 """
 FastAPI endpoint for the RAG Troubleshooting Module.
-POST /query   — accepts network alert events, runs RAG, then fires notifications automatically.
-POST /ingest  — trigger document ingestion (PDFs + YAML specs).
-GET  /health  — service health check.
+POST /query    — accepts network alert events, runs RAG, fires notifications.
+POST /analyze  — accepts ML anomaly output, runs RAG, fires notifications.
+GET  /data/*   — serves real ML model output data.
+GET  /health   — service health check.
 """
 
 import json
@@ -11,6 +12,8 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Optional
+
+DATA_DIR = Path(os.getenv("ML_DATA_DIR", "/app/ml_data"))
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -420,6 +423,39 @@ async def query(request: AlertQueryRequest):
     )
 
 
+# ── ML Data endpoints ─────────────────────────────────────────────────────────
+
+def _load_json(filename: str):
+    p = DATA_DIR / filename
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"{filename} not found in {DATA_DIR}")
+    with open(p, encoding="utf-8") as f:
+        return json.load(f)
+
+
+@app.get("/data/summary")
+async def data_summary():
+    return _load_json("summary_stats.json")
+
+
+@app.get("/data/models")
+async def data_models():
+    return _load_json("model_comparison.json")
+
+
+@app.get("/data/anomalies")
+async def data_anomalies(limit: int = 100, severity: Optional[str] = None):
+    records = _load_json("anomalies_only.json")
+    if severity:
+        records = [r for r in records if r.get("severity") == severity]
+    return {"total": len(records), "records": records[:limit]}
+
+
+@app.get("/data/dispatch")
+async def data_dispatch():
+    return _load_json("alert_dispatch_state.json")
+
+
 @app.post("/query/general")
 async def query_general(request: GeneralQueryRequest):
     """Free-text query for network engineers — no notifications."""
@@ -454,3 +490,4 @@ async def ingest(request: IngestRequest, background_tasks: BackgroundTasks):
 
     background_tasks.add_task(_run)
     return {"status": "ingestion started in background"}
+

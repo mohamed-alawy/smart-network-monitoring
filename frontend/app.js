@@ -80,8 +80,297 @@ const RAG_FILES = [
   { name: '3GPP_vocabulary.docx',         type: 'DOCX', chunks: 91,  size: '450 KB' },
 ];
 
+// ── REAL DATA STATE ─────────────────────────────────────────────────
+let REAL_SUMMARY  = null;
+let REAL_ANOMALIES = [];
+let REAL_MODELS   = null;
 let currentFilter = 'all';
 let uploadQueue   = [];
+
+// ── LOAD REAL DATA FROM API ──────────────────────────────────────────
+async function loadRealData() {
+  try {
+    const [sumRes, anomRes, modRes] = await Promise.all([
+      fetch(`${API_BASE}/data/summary`),
+      fetch(`${API_BASE}/data/anomalies?limit=256`),
+      fetch(`${API_BASE}/data/models`),
+    ]);
+    if (!sumRes.ok || !anomRes.ok || !modRes.ok) return;
+
+    REAL_SUMMARY   = await sumRes.json();
+    const anomData = await anomRes.json();
+    REAL_ANOMALIES = anomData.records || [];
+    REAL_MODELS    = await modRes.json();
+
+    _applyRealDataToDashboard();
+    _applyRealDataToAlerts();
+    _applyRealDataToModel();
+  } catch (e) {
+    console.warn('Real data API not reachable — using demo data', e);
+  }
+}
+
+function _applyRealDataToDashboard() {
+  if (!REAL_SUMMARY) return;
+  const s = REAL_SUMMARY;
+
+  // KPI cards
+  _setText('val-throughput', `${s.dl_throughput_stats.mean.toFixed(1)}<span class="unit">Mbps</span>`);
+  _setText('val-latency',    `${Math.abs(s.rsrp_stats.mean).toFixed(0)}<span class="unit">dBm</span>`);
+  _setText('val-loss',       `${s.anomaly_rate.toFixed(2)}<span class="unit">%</span>`);
+  _setText('val-alerts',     `<span class="glow">${s.anomaly_count}</span>`);
+
+  // delta labels
+  _setText('delta-throughput', `↑ max ${s.dl_throughput_stats.max} Mbps`);
+  _setText('delta-latency',    `RSRP mean ${s.rsrp_stats.mean.toFixed(1)} dBm`);
+  _setText('delta-loss',       `${s.anomaly_count} / ${s.total_measurements} measurements`);
+
+  // Signal quality gauges (RSRP, RSRQ, SINR)
+  _updateGauge('gauge-rsrp', s.rsrp_stats.mean, -130, -60, 'var(--green)');
+  _updateGauge('gauge-rsrq', s.rsrq_stats.mean, -25, -5,  'var(--yellow)');
+  _updateGauge('gauge-sinr', s.sinr_stats.mean,  -15, 30,  'var(--orange)');
+
+  // Severity progress bars
+  const total = s.anomaly_count;
+  _setWidth('bar-critical', (s.severity_distribution.critical / total * 100).toFixed(0));
+  _setWidth('bar-high',     (s.severity_distribution.high     / total * 100).toFixed(0));
+  _setWidth('bar-medium',   (s.severity_distribution.medium   / total * 100).toFixed(0));
+  _setText('lbl-critical',  `${s.severity_distribution.critical}`);
+  _setText('lbl-high',      `${s.severity_distribution.high}`);
+  _setText('lbl-medium',    `${s.severity_distribution.medium}`);
+
+  // Main chart — dl_throughput over time from anomalies
+  drawRealChart();
+  drawAnomalyTypesChart();
+  drawAreaChart();
+}
+
+function _applyRealDataToAlerts() {
+  // Map real anomalies to ALERTS array format
+  ALERTS.length = 0;
+  REAL_ANOMALIES.slice(0, 50).forEach((r, i) => {
+    ALERTS.push({
+      id:               r.measurement_id,
+      severity:         r.severity === 'low' ? 'medium' : r.severity,
+      title:            `${r.anomaly_types[0] || 'ML Anomaly'} — ${r.area_name}`,
+      location:         `${r.area_name}, ${r.district}`,
+      root_cause:       r.root_causes[0] || r.anomaly_types[0] || 'Unknown',
+      cause_explanation: r.root_causes.join(' | ') || 'ML-detected anomaly',
+      priority:         r.severity,
+      eta:              r.severity === 'critical' ? '1–2 hours' : r.severity === 'high' ? '2–4 hours' : '4–8 hours',
+      suggested_solution: r.root_causes.length ? r.root_causes : ['Investigate signal metrics', 'Check cell hardware'],
+      affected_standards: ['TS 28.552', 'TS 32.111'],
+      escalation_needed:  r.severity === 'critical',
+      additional_notes:   `RSRP: ${r.rsrp_dbm} dBm | RSRQ: ${r.rsrq_db} dB | SINR: ${r.sinr_db} dB`,
+      ts:               new Date(r.time).getTime(),
+      score:            r.ml_anomaly_score,
+      symptoms:         r.anomaly_types,
+      notified:         r.severity === 'critical' ? ['engineer','call_center','client']
+                      : r.severity === 'high'     ? ['engineer','call_center']
+                      :                             ['call_center'],
+    });
+  });
+
+  // Re-render both alert lists
+  renderAlerts(document.getElementById('dashboard-alerts'), ALERTS.slice(0, 3));
+  renderAlerts(document.getElementById('alerts-list'),      ALERTS);
+  document.getElementById('alert-badge-count').textContent = REAL_SUMMARY?.anomaly_count || ALERTS.length;
+}
+
+function _applyRealDataToModel() {
+  if (!REAL_MODELS) return;
+  const m = REAL_MODELS.metrics;
+  const tbody = document.getElementById('model-metrics-table');
+  if (!tbody) return;
+
+  tbody.innerHTML = Object.entries(m).map(([name, v]) => `
+    <tr>
+      <td>${name}</td>
+      <td><span class="badge ${v.f1_score >= 0.8 ? 'ok' : v.f1_score >= 0.6 ? 'medium' : 'high'}">${(v.f1_score * 100).toFixed(1)}%</span></td>
+      <td>${(v.precision * 100).toFixed(1)}%</td>
+      <td>${(v.recall * 100).toFixed(1)}%</td>
+      <td>${(v.accuracy * 100).toFixed(1)}%</td>
+      <td>${name === REAL_MODELS.best_model ? '⭐' : ''}</td>
+    </tr>`).join('');
+
+  drawFeatureImportanceChart();
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────
+function _setText(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
+function _setWidth(id, pct) { const el = document.getElementById(id); if (el) el.style.width = pct + '%'; }
+
+function _updateGauge(id, val, min, max, color) {
+  const svg = document.getElementById(id);
+  if (!svg) return;
+  const pct = Math.max(0, Math.min(1, (val - min) / (max - min)));
+  const C = 188.4;
+  const offset = C - pct * C;
+  const display = val.toFixed(1);
+  svg.innerHTML = `
+    <circle cx="36" cy="36" r="30" fill="none" stroke="var(--bg-3)" stroke-width="6"/>
+    <circle cx="36" cy="36" r="30" fill="none" stroke="${color}" stroke-width="6"
+      stroke-dasharray="${C}" stroke-dashoffset="${offset}" stroke-linecap="round" transform="rotate(-90 36 36)"/>
+    <text x="36" y="40" text-anchor="middle" fill="var(--text-0)" font-size="10" font-family="IBM Plex Mono" font-weight="500">${display}</text>`;
+}
+
+// ── REAL CHARTS ──────────────────────────────────────────────────────
+function drawRealChart(range = '1H') {
+  const svg = document.getElementById('main-chart');
+  if (!svg) return;
+
+  let pts;
+  if (REAL_ANOMALIES.length > 0) {
+    // بنعرض الـ ml_anomaly_score × 100 على الزمن
+    const sorted = [...REAL_ANOMALIES].sort((a,b) => new Date(a.time) - new Date(b.time));
+    const take = range === '1H' ? 60 : range === '6H' ? 120 : sorted.length;
+    pts = sorted.slice(-take).map(r => r.ml_anomaly_score * 100);
+  } else {
+    pts = generatePoints(60, 400, 1000, 80);
+  }
+
+  const W = 600, H = 200;
+  const PAD = { top: 10, right: 10, bottom: 32, left: 44 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+  const minV = 0, maxV = 100;
+  const xS = i  => PAD.left + (i / (pts.length - 1 || 1)) * cW;
+  const yS = v  => PAD.top  + cH - ((v - minV) / (maxV - minV)) * cH;
+
+  const coords = pts.map((v,i) => [xS(i), yS(v)]);
+  const line   = coords.map((p,i) => (i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`)).join(' ');
+  const area   = line + ` L${xS(pts.length-1)},${PAD.top+cH} L${PAD.left},${PAD.top+cH} Z`;
+
+  // Y ticks
+  let yLines='', yLabels='';
+  [0,25,50,75,100].forEach(v => {
+    const y = yS(v);
+    yLines  += `<line x1="${PAD.left}" y1="${y}" x2="${PAD.left+cW}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"/>`;
+    yLabels += `<text x="${PAD.left-6}" y="${y+4}" text-anchor="end" fill="var(--text-2)" font-size="9" font-family="IBM Plex Mono">${v}</text>`;
+  });
+
+  // X ticks — every 10 points
+  let xLabels = '';
+  const step = Math.max(1, Math.floor(pts.length / 6));
+  for (let i=0; i<pts.length; i+=step) {
+    xLabels += `<text x="${xS(i)}" y="${H-8}" text-anchor="middle" fill="var(--text-2)" font-size="9" font-family="IBM Plex Mono">${i}</text>`;
+  }
+  xLabels += `<text x="${xS(pts.length-1)}" y="${H-8}" text-anchor="middle" fill="var(--orange)" font-size="9" font-family="IBM Plex Mono">latest</text>`;
+
+  // Anomaly zone — scores > 50
+  let zones = '';
+  let inZone = false, zoneStart = 0;
+  pts.forEach((v,i) => {
+    if (v > 50 && !inZone) { inZone=true; zoneStart=i; }
+    else if (v <= 50 && inZone) {
+      zones += `<rect x="${xS(zoneStart)}" y="${PAD.top}" width="${xS(i)-xS(zoneStart)}" height="${cH}" fill="rgba(232,69,10,0.08)"/>`;
+      inZone=false;
+    }
+  });
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--orange)" stop-opacity=".2"/>
+        <stop offset="100%" stop-color="var(--orange)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${yLines}${zones}
+    <path d="${area}" fill="url(#areaGrad)"/>
+    <path d="${line}" fill="none" stroke="var(--orange)" stroke-width="1.8" stroke-linejoin="round"/>
+    <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top+cH}" stroke="var(--border-lit)" stroke-width="1"/>
+    <line x1="${PAD.left}" y1="${PAD.top+cH}" x2="${PAD.left+cW}" y2="${PAD.top+cH}" stroke="var(--border-lit)" stroke-width="1"/>
+    ${yLabels}${xLabels}
+    <text x="${PAD.left+cW/2}" y="${PAD.top+8}" text-anchor="middle" fill="var(--text-2)" font-size="8" font-family="IBM Plex Mono">Anomaly Score %</text>`;
+}
+
+function drawAnomalyTypesChart() {
+  const svg = document.getElementById('anomaly-types-chart');
+  if (!svg || !REAL_SUMMARY) return;
+  const dist = REAL_SUMMARY.anomaly_types_distribution;
+  const entries = Object.entries(dist).slice(0, 6).sort((a,b) => b[1]-a[1]);
+  const maxVal  = entries[0]?.[1] || 1;
+  const W = 500, barH = 22, gap = 8, labelW = 220, padding = 10;
+  const totalH  = entries.length * (barH + gap) + 2*padding;
+  const colors  = ['var(--orange)','var(--red)','var(--yellow)','var(--blue)','var(--green)','var(--orange-hi)'];
+
+  const bars = entries.map(([name, val], i) => {
+    const barW = ((val / maxVal) * (W - labelW - 50)).toFixed(0);
+    const y = padding + i * (barH + gap);
+    const shortName = name.length > 28 ? name.slice(0, 28) + '…' : name;
+    return `
+      <text x="${labelW-6}" y="${y + barH/2 + 4}" text-anchor="end" fill="var(--text-1)" font-size="9" font-family="IBM Plex Mono">${shortName}</text>
+      <rect x="${labelW}" y="${y}" width="${barW}" height="${barH}" rx="3" fill="${colors[i]}" opacity=".8"/>
+      <text x="${labelW + parseFloat(barW) + 6}" y="${y + barH/2 + 4}" fill="var(--text-0)" font-size="9" font-family="IBM Plex Mono" font-weight="500">${val}</text>`;
+  }).join('');
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${totalH}`);
+  svg.setAttribute('height', totalH);
+  svg.innerHTML = bars;
+}
+
+function drawAreaChart() {
+  const svg = document.getElementById('area-chart');
+  if (!svg || !REAL_SUMMARY) return;
+  const areas = REAL_SUMMARY.top_anomaly_areas;
+  const entries = Object.entries(areas);
+  const total   = entries.reduce((s,[,v]) => s+v, 0);
+  const colors  = ['var(--orange)','var(--red)','var(--yellow)','var(--blue)'];
+  const R = 60, cx = 80, cy = 70;
+  let startAngle = -Math.PI/2;
+  let slices = '', legend = '';
+
+  entries.forEach(([name, val], i) => {
+    const angle   = (val / total) * 2 * Math.PI;
+    const endAngle = startAngle + angle;
+    const x1 = cx + R * Math.cos(startAngle);
+    const y1 = cy + R * Math.sin(startAngle);
+    const x2 = cx + R * Math.cos(endAngle);
+    const y2 = cy + R * Math.sin(endAngle);
+    const large = angle > Math.PI ? 1 : 0;
+    slices += `<path d="M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${R},${R} 0 ${large},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${colors[i]}" opacity=".85"/>`;
+    legend += `
+      <rect x="165" y="${10 + i*22}" width="10" height="10" rx="2" fill="${colors[i]}"/>
+      <text x="180" y="${20 + i*22}" fill="var(--text-1)" font-size="9" font-family="IBM Plex Mono">${name} (${val})</text>`;
+    startAngle = endAngle;
+  });
+
+  svg.innerHTML = slices + legend + `<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="var(--text-0)" font-size="9" font-family="IBM Plex Mono" font-weight="600">${total} total</text>`;
+}
+
+function drawFeatureImportanceChart() {
+  const svg = document.getElementById('feature-importance-chart');
+  if (!svg || !REAL_MODELS) return;
+  const features = REAL_MODELS.feature_importance_xgb.slice(0, 8);
+  const maxImp   = features[0]?.importance || 1;
+  const W = 440, barH = 20, gap = 7, labelW = 160, padding = 8;
+  const totalH = features.length * (barH + gap) + 2*padding;
+
+  const bars = features.map((f, i) => {
+    const barW = ((f.importance / maxImp) * (W - labelW - 60)).toFixed(0);
+    const y = padding + i * (barH + gap);
+    return `
+      <text x="${labelW-6}" y="${y+barH/2+4}" text-anchor="end" fill="var(--text-1)" font-size="9" font-family="IBM Plex Mono">${f.feature}</text>
+      <rect x="${labelW}" y="${y}" width="${barW}" height="${barH}" rx="3" fill="var(--orange)" opacity="${0.5 + f.importance/maxImp*0.5}"/>
+      <text x="${labelW+parseFloat(barW)+6}" y="${y+barH/2+4}" fill="var(--text-0)" font-size="9" font-family="IBM Plex Mono">${(f.importance*100).toFixed(1)}%</text>`;
+  }).join('');
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${totalH}`);
+  svg.setAttribute('height', totalH);
+  svg.innerHTML = bars;
+}
+
+// chart time range buttons
+function setChartRange(range, btn) {
+  document.querySelectorAll('.chart-time-btn').forEach(b => {
+    b.className = 'btn btn-ghost btn-sm';
+  });
+  btn.className = 'btn btn-ghost btn-sm';
+  btn.style.color = 'var(--orange)';
+  btn.style.borderColor = 'var(--orange)';
+  drawRealChart(range);
+}
+
 
 // ── CLOCK ──────────────────────────────────────────────────────────
 function updateClock() {
@@ -644,11 +933,15 @@ async function sendToAnalyze() {
 }
 document.addEventListener('DOMContentLoaded', () => {
   if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
+
+  drawRealChart();
+  drawSparkline('spark-throughput', 700, 1000, 'var(--green)');
+
   renderAlerts(document.getElementById('dashboard-alerts'), ALERTS.slice(0, 3));
   renderAlerts(document.getElementById('alerts-list'), ALERTS);
   renderRagFiles();
-  liveUpdate();
-  setInterval(liveUpdate, 4000);
-  document.querySelector('.chart-time-btn')?.classList.add('active');
+
+  // load real data — replaces demo when API ready
+  loadRealData();
   loadConfig();
 });
