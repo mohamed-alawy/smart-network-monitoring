@@ -433,7 +433,37 @@ def _load_json(filename: str):
         return json.load(f)
 
 
-@app.get("/data/summary")
+@app.post("/run-pipeline")
+async def run_pipeline(background_tasks: BackgroundTasks):
+    """
+    يشغّل الـ ML anomaly detection pipeline على بيانات Vienna.
+    بيشتغل in background ويحدّث الـ ml_data/ folder.
+    """
+    def _run():
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "modules" / "ml"))
+        try:
+            from ml_anomaly_detection import run_ml_pipeline
+            import shutil
+            summary = run_ml_pipeline()
+            # انسخ النتايج لـ ml_data
+            ml_src = Path(__file__).parent.parent.parent / "modules" / "ml" / "data"
+            ml_dst = DATA_DIR
+            ml_dst.mkdir(exist_ok=True)
+            for fname in ["summary_stats.json", "model_comparison.json",
+                          "anomalies_only.json", "alert_dispatch_state.json"]:
+                src = ml_src / fname
+                if src.exists():
+                    shutil.copy(src, ml_dst / fname)
+            logger.success(f"Pipeline complete: {summary['anomaly_count']} anomalies found")
+        except Exception as e:
+            logger.error(f"Pipeline failed: {e}")
+
+    background_tasks.add_task(_run)
+    return {"status": "pipeline started", "message": "Check /data/summary for results when done"}
+
+
+
 async def data_summary():
     return _load_json("summary_stats.json")
 
