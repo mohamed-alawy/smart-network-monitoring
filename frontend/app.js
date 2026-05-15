@@ -395,37 +395,71 @@ function _upd(id,text){const e=document.getElementById(id);if(!e)return;e.classN
 
 // ── DEMO ──────────────────────────────────────────────────────────
 const DEMO = {
-  critical:{severity:'critical',ml_anomaly_score:0.91,location:'Westbahnhof, Vienna',cell_id:'107011',anomaly_types:['High path loss (123 dB)','RSRP deviation (-113.4 dBm)'],root_causes:['Extreme signal weakness - coverage hole','Excessive propagation loss - indoor obstruction'],rsrp_dbm:-113.4,rsrq_db:-24.3,sinr_db:-12.7,dl_throughput_mbps:0.0},
-  high:    {severity:'high',    ml_anomaly_score:0.74,location:'Mariahilfer Strasse, Vienna',cell_id:'129795',anomaly_types:['RSRQ deviation (-18.9 dB)','Signal quality degradation'],root_causes:['Severe interference - PCI conflict or external RF source'],rsrp_dbm:-102.6,rsrq_db:-18.9,sinr_db:-4.3,dl_throughput_mbps:7.4},
-  medium:  {severity:'medium',  ml_anomaly_score:0.52,location:'Karlsplatz, Vienna',cell_id:'163341',anomaly_types:['ML-detected statistical anomaly'],root_causes:['Pattern deviation detected by AI'],rsrp_dbm:-97.4,rsrq_db:-14.4,sinr_db:0.4,dl_throughput_mbps:23.5},
+  critical: { measurement_id:'demo-1', location:'Westbahnhof, Vienna', cell_id:'107011', rsrp_dbm:-113.4, rsrq_db:-24.3, sinr_db:-12.7, dl_throughput_mbps:0.0 },
+  high:     { measurement_id:'demo-2', location:'Mariahilfer Strasse, Vienna', cell_id:'129795', rsrp_dbm:-102.6, rsrq_db:-18.9, sinr_db:-4.3,  dl_throughput_mbps:7.4 },
+  medium:   { measurement_id:'demo-3', location:'Karlsplatz, Vienna', cell_id:'163341', rsrp_dbm:-97.4,  rsrq_db:-14.4, sinr_db:0.4,   dl_throughput_mbps:23.5 },
+  normal:   { measurement_id:'demo-4', location:'Stephansplatz, Vienna', cell_id:'200001', rsrp_dbm:-75.0,  rsrq_db:-8.0,  sinr_db:18.0,  dl_throughput_mbps:95.0 },
 };
 let _demoRec = null;
 function runDemo(type) {
-  if(type==='replay'){const r=REAL_ANOMALIES.find(x=>x.severity==='critical')||REAL_ANOMALIES[0];if(!r){document.getElementById('demo-status').textContent='No real data loaded';return;}_demoRec=[{severity:r.severity,ml_anomaly_score:r.ml_anomaly_score,location:r.area_name+', '+r.district,cell_id:String(r.cell_id),anomaly_types:r.anomaly_types,root_causes:r.root_causes,rsrp_dbm:r.rsrp_dbm,rsrq_db:r.rsrq_db,sinr_db:r.sinr_db,dl_throughput_mbps:r.dl_throughput_mbps}];}
-  else{_demoRec=[DEMO[type]];}
-  document.getElementById('demo-preview').textContent=JSON.stringify(_demoRec[0],null,2);
-  document.getElementById('demo-run-btn').disabled=false;
-  document.getElementById('demo-status').textContent='Ready — click Run & Analyze';
-  document.getElementById('demo-result').style.display='none';
+  if (type === 'replay') {
+    const r = REAL_ANOMALIES.find(x => x.severity === 'critical') || REAL_ANOMALIES[0];
+    if (!r) { document.getElementById('demo-status').textContent = 'No real data loaded yet'; return; }
+    _demoRec = [{ measurement_id: String(r.measurement_id), location: r.area_name + ', ' + r.district, cell_id: String(r.cell_id), rsrp_dbm: r.rsrp_dbm, rsrq_db: r.rsrq_db, sinr_db: r.sinr_db, dl_throughput_mbps: r.dl_throughput_mbps }];
+  } else {
+    _demoRec = [DEMO[type]];
+  }
+  document.getElementById('demo-preview').textContent = JSON.stringify(_demoRec[0], null, 2);
+  document.getElementById('demo-run-btn').disabled = false;
+  document.getElementById('demo-status').textContent = 'Ready — click Run & Analyze';
+  document.getElementById('demo-result').style.display = 'none';
 }
+
 async function submitDemo() {
-  if(!_demoRec) return;
-  const btn=document.getElementById('demo-run-btn'),st=document.getElementById('demo-status');
-  btn.disabled=true;btn.textContent='Analyzing…';st.textContent='Sending to RAG pipeline…';st.style.color='var(--orange)';
+  if (!_demoRec) return;
+  const btn = document.getElementById('demo-run-btn');
+  const st  = document.getElementById('demo-status');
+  btn.disabled = true; btn.textContent = 'Running ML…'; st.textContent = 'Sending to ML model…'; st.style.color = 'var(--orange)';
   try {
-    const res=await fetch(API_BASE+'/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_demoRec)});
-    const d=await res.json(),rag=d.rag_result||{},notif=d.notification||{};
-    document.getElementById('demo-cause').textContent=rag.cause_explanation||'No explanation (run /ingest first to load 3GPP specs)';
-    document.getElementById('demo-eta').textContent=rag.estimated_resolution_time?'ETA: '+rag.estimated_resolution_time:'';
-    const nr=notif.recipients_notified||[];
-    document.getElementById('demo-notified').innerHTML=nr.length?nr.map(r=>'<span class="badge ok" style="margin-right:4px;">'+r+'</span>').join(''):'<span style="color:var(--text-2);">No emails — check Settings</span>';
-    document.getElementById('demo-errors').textContent=(notif.errors||[]).join(' | ');
-    const steps=rag.suggested_solution||[];
-    document.getElementById('demo-steps').innerHTML=steps.length?steps.map((s,i)=>'<div style="margin-bottom:4px;"><span style="color:var(--orange);font-weight:600;">'+(i+1)+'.</span> '+s+'</div>').join(''):'No steps returned.';
-    document.getElementById('demo-result').style.display='block';
-    st.textContent='Done — '+d.processed+' record, '+nr.length+' notified';st.style.color='var(--green)';
-  } catch(e){st.textContent='Error: '+e.message;st.style.color='var(--red)';}
-  btn.disabled=false;btn.textContent='Run & Analyze';
+    // Step 1: ML inference
+    const res  = await fetch(API_BASE + '/predict', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(_demoRec) });
+    const data = await res.json();
+    const pred = data.predictions?.[0] || {};
+    const rag  = data.rag_result || {};
+    const notif = rag.notification || {};
+
+    // Show ML result
+    const isAnom = pred.is_anomaly;
+    const score  = pred.ml_anomaly_score ?? 0;
+    const sev    = pred.severity || 'low';
+
+    document.getElementById('demo-cause').innerHTML =
+      '<div style="margin-bottom:8px;">' +
+      '<span class="badge ' + sev + '" style="margin-right:8px;">' + sev.toUpperCase() + '</span>' +
+      '<span style="font-weight:600;color:' + (isAnom ? 'var(--red)' : 'var(--green)') + ';">' +
+      (isAnom ? 'ANOMALY DETECTED' : 'NORMAL — No anomaly') + '</span>' +
+      ' &nbsp;·&nbsp; Score: <strong>' + (score * 100).toFixed(1) + '%</strong>' +
+      '</div>' +
+      (rag.cause_explanation || (isAnom ? 'ML detected anomaly — RAG analysis pending (ingest 3GPP specs first)' : ''));
+
+    document.getElementById('demo-eta').textContent = rag.estimated_resolution_time ? 'ETA: ' + rag.estimated_resolution_time : '';
+
+    const nr = notif.recipients_notified || rag.notification?.recipients_notified || [];
+    document.getElementById('demo-notified').innerHTML = nr.length
+      ? nr.map(r => '<span class="badge ok" style="margin-right:4px;">✓ ' + r + '</span>').join('')
+      : '<span style="color:var(--text-2);">' + (isAnom ? 'No emails configured — check Settings' : 'No alert sent (normal signal)') + '</span>';
+    document.getElementById('demo-errors').textContent = (notif.errors || []).join(' | ');
+
+    const steps = rag.suggested_solution || [];
+    document.getElementById('demo-steps').innerHTML = steps.length
+      ? steps.map((s, i) => '<div style="margin-bottom:4px;"><span style="color:var(--orange);font-weight:600;">' + (i+1) + '.</span> ' + s + '</div>').join('')
+      : (isAnom ? 'No steps from RAG (knowledge base empty).' : 'Signal is within normal range — no action required.');
+
+    document.getElementById('demo-result').style.display = 'block';
+    st.textContent = 'Done — ML score ' + (score*100).toFixed(1) + '% · ' + (isAnom ? data.anomalies_detected + ' anomaly sent to RAG' : 'No anomaly');
+    st.style.color = isAnom ? 'var(--red)' : 'var(--green)';
+  } catch(e) { st.textContent = 'Error: ' + e.message; st.style.color = 'var(--red)'; }
+  btn.disabled = false; btn.textContent = 'Run & Analyze';
 }
 
 // ── INIT ──────────────────────────────────────────────────────────

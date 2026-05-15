@@ -652,22 +652,11 @@ We apologize for the inconvenience.</textarea>
 
           <!-- Scenario buttons -->
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
-            <button class="btn btn-ghost" onclick="runDemo('critical')">
-              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-              Critical — Coverage Hole
-            </button>
-            <button class="btn btn-ghost" onclick="runDemo('high')">
-              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              High — Interference
-            </button>
-            <button class="btn btn-ghost" onclick="runDemo('medium')">
-              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
-              Medium — Throughput Drop
-            </button>
-            <button class="btn btn-ghost" onclick="runDemo('replay')" title="Replay last real anomaly from Vienna data">
-              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-              Replay Real Anomaly
-            </button>
+            <button class="btn btn-ghost" onclick="runDemo('critical')">Critical Signal</button>
+            <button class="btn btn-ghost" onclick="runDemo('high')">High Interference</button>
+            <button class="btn btn-ghost" onclick="runDemo('medium')">Medium Degradation</button>
+            <button class="btn btn-ghost" onclick="runDemo('normal')">Normal Signal</button>
+            <button class="btn btn-ghost" onclick="runDemo('replay')" title="Use first real anomaly from Vienna data">Replay Real Record</button>
           </div>
 
           <!-- Record preview -->
