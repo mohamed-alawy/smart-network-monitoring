@@ -25,6 +25,8 @@ numpy==1.26.4
 # ML inference
 joblib==1.4.2
 scikit-learn==1.5.2
+xgboost==2.1.1
+torch>=2.0.0
 
 # Utilities
 python-dotenv==1.0.1
