@@ -448,21 +448,21 @@ async def predict(records: List[AnomalyRecord]):
     model  = joblib.load(model_path)
     scaler = joblib.load(scaler_path)
 
-    # 15 features the model was trained on (config.py ALL_FEATURE_COLS)
-    # raw (11): rsrp, rsrq, rssi, sinr, pathloss, dl_tp, ul_tp, timing, freq, height, azimuth
-    # engineered (4): signal_quality_index, throughput_ratio, efficiency, signal_noise_gap
+    # Build 15 features using dataset mean values as defaults for missing fields
+    # Means from Vienna LTE dataset (summary_stats.json)
+    RSRP_MEAN = -90.11; RSRQ_MEAN = -14.8; SINR_MEAN = 5.61; DL_MEAN = 34.54
     def _build_row(r: AnomalyRecord) -> list:
-        rsrp  = r.rsrp_dbm or -90.0
-        rsrq  = r.rsrq_db  or -14.0
-        rssi  = rsrp + 10.0          # approximate
-        sinr  = r.sinr_db  or 5.0
-        pl    = abs(rsrp) + 20.0     # rough pathloss estimate
-        dl    = r.dl_throughput_mbps or 0.0
-        ul    = 0.1
-        ta    = 5.0
-        freq  = 2630000.0
-        h     = 0.0
-        az    = 0.0
+        rsrp  = r.rsrp_dbm           if r.rsrp_dbm           is not None else RSRP_MEAN
+        rsrq  = r.rsrq_db            if r.rsrq_db            is not None else RSRQ_MEAN
+        sinr  = r.sinr_db            if r.sinr_db            is not None else SINR_MEAN
+        dl    = r.dl_throughput_mbps if r.dl_throughput_mbps is not None else DL_MEAN
+        rssi  = rsrp + 22.0          # typical RSSI offset (Vienna mean: -68 dBm)
+        pl    = -(rsrp) + 20.0       # rough pathloss from RSRP
+        ul    = 0.22                 # dataset mean
+        ta    = 5.0                  # dataset mean timing advance
+        freq  = 2630000.0            # most common channel in Vienna
+        h     = 0.0                  # cell height (many unmatched = 0)
+        az    = 0.0                  # azimuth (many unmatched = 0)
         sqi   = (rsrp+120)/60*0.4 + (rsrq+30)/30*0.3 + (sinr+10)/40*0.3
         ratio = dl / (ul + 0.001)
         eff   = dl / (2850 + 1)
