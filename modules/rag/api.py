@@ -529,7 +529,7 @@ async def predict(records: List[AnomalyRecord]):
             logger.error(f"Inference error for {r.measurement_id}: {e}")
             is_anom, score = False, 0.0
 
-        sev = "critical" if score >= 0.75 else "high" if score >= 0.5 else "medium" if is_anom else "low"
+        sev = "critical" if score >= 0.55 else "high" if score >= 0.35 else "medium" if is_anom else "low"
         results.append({
             "measurement_id": r.measurement_id,
             "is_anomaly":       is_anom,
