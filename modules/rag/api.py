@@ -436,48 +436,51 @@ def _load_json(filename: str):
 
 @app.post("/predict")
 async def predict(records: List[AnomalyRecord]):
-    """
-    Run inference using saved best_model.pkl + scaler.pkl on incoming records.
-    Returns predictions with anomaly scores, then routes to RAG + notifications.
-    """
-    import joblib
-    import numpy as np
+    """ML inference using best_model.pkl + scaler.pkl, then RAG + notifications."""
+    import joblib, numpy as np
 
     model_path  = DATA_DIR / "best_model.pkl"
     scaler_path = DATA_DIR / "scaler.pkl"
 
     if not model_path.exists() or not scaler_path.exists():
-        raise HTTPException(
-            status_code=503,
-            detail="Model files not found in ml_data/. Copy best_model.pkl and scaler.pkl there."
-        )
+        raise HTTPException(status_code=503, detail="Model files not found in ml_data/")
 
     model  = joblib.load(model_path)
     scaler = joblib.load(scaler_path)
 
-    FEATURES = [
-        "rsrp_dbm", "rsrq_db", "sinr_db", "dl_throughput_mbps",
-    ]
+    # 15 features the model was trained on (config.py ALL_FEATURE_COLS)
+    # raw (11): rsrp, rsrq, rssi, sinr, pathloss, dl_tp, ul_tp, timing, freq, height, azimuth
+    # engineered (4): signal_quality_index, throughput_ratio, efficiency, signal_noise_gap
+    def _build_row(r: AnomalyRecord) -> list:
+        rsrp  = r.rsrp_dbm or -90.0
+        rsrq  = r.rsrq_db  or -14.0
+        rssi  = rsrp + 10.0          # approximate
+        sinr  = r.sinr_db  or 5.0
+        pl    = abs(rsrp) + 20.0     # rough pathloss estimate
+        dl    = r.dl_throughput_mbps or 0.0
+        ul    = 0.1
+        ta    = 5.0
+        freq  = 2630000.0
+        h     = 0.0
+        az    = 0.0
+        sqi   = (rsrp+120)/60*0.4 + (rsrq+30)/30*0.3 + (sinr+10)/40*0.3
+        ratio = dl / (ul + 0.001)
+        eff   = dl / (2850 + 1)
+        gap   = rsrp - rssi
+        return [rsrp, rsrq, rssi, sinr, pl, dl, ul, ta, freq, h, az, sqi, ratio, eff, gap]
 
     results = []
     for r in records:
-        row = [
-            r.rsrp_dbm or 0.0,
-            r.rsrq_db  or 0.0,
-            r.sinr_db  or 0.0,
-            r.dl_throughput_mbps or 0.0,
-        ]
-        X      = scaler.transform([row])
-        pred   = int(model.predict(X)[0])
-        score  = float(model.predict_proba(X)[0][1]) if hasattr(model, "predict_proba") else float(pred)
-        sev    = "critical" if score >= 0.8 else "high" if score >= 0.6 else "medium" if pred else "low"
-
-        results.append({
-            "measurement_id": r.measurement_id,
-            "is_anomaly":     bool(pred),
-            "ml_anomaly_score": round(score, 4),
-            "severity":       sev,
-        })
+        try:
+            row  = _build_row(r)
+            X    = scaler.transform([row])
+            pred = int(model.predict(X)[0])
+            score = float(model.predict_proba(X)[0][1]) if hasattr(model, "predict_proba") else float(pred)
+        except Exception as e:
+            logger.error(f"Inference failed for record {r.measurement_id}: {e}")
+            pred, score = 0, 0.0
+        sev = "critical" if score >= 0.8 else "high" if score >= 0.6 else "medium" if pred else "low"
+        results.append({"measurement_id": r.measurement_id, "is_anomaly": bool(pred), "ml_anomaly_score": round(score, 4), "severity": sev})
 
     anomalies = [
         AnomalyRecord(**{**r.__dict__, "severity": res["severity"], "ml_anomaly_score": res["ml_anomaly_score"]})
@@ -486,9 +489,11 @@ async def predict(records: List[AnomalyRecord]):
 
     rag_result = None
     if anomalies:
-        analyze_resp = await analyze(anomalies)
-        rag_result = analyze_resp.rag_result
-
+        try:
+            analyze_resp = await analyze(anomalies)
+            rag_result   = analyze_resp.rag_result
+        except Exception as e:
+            logger.error(f"RAG analyze failed: {e}")
 
     return {"predictions": results, "anomalies_detected": len(anomalies), "rag_result": rag_result}
 
