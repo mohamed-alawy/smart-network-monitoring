@@ -436,51 +436,105 @@ def _load_json(filename: str):
 
 @app.post("/predict")
 async def predict(records: List[AnomalyRecord]):
-    """ML inference using best_model.pkl + scaler.pkl, then RAG + notifications."""
-    import joblib, numpy as np
+    """
+    Signal-based anomaly detection using Z-score thresholds from Vienna LTE dataset.
+    If XGBoost model exists (best_model.json), uses it instead.
+    Routes anomalies to RAG + notifications automatically.
+    """
+    import numpy as np
 
-    model_path  = DATA_DIR / "best_model.pkl"
+    # Vienna dataset statistics (from summary_stats.json)
+    STATS = {
+        "rsrp": {"mean": -90.11, "std": 9.5},
+        "rsrq": {"mean": -14.8,  "std": 3.2},
+        "sinr": {"mean":   5.61, "std": 6.8},
+        "dl":   {"mean":  34.54, "std": 28.0},
+    }
+
+    def _zscore_predict(r: AnomalyRecord):
+        rsrp = r.rsrp_dbm           if r.rsrp_dbm           is not None else STATS["rsrp"]["mean"]
+        rsrq = r.rsrq_db            if r.rsrq_db            is not None else STATS["rsrq"]["mean"]
+        sinr = r.sinr_db            if r.sinr_db            is not None else STATS["sinr"]["mean"]
+        dl   = r.dl_throughput_mbps if r.dl_throughput_mbps is not None else STATS["dl"]["mean"]
+
+        z_rsrp = (rsrp - STATS["rsrp"]["mean"]) / STATS["rsrp"]["std"]
+        z_rsrq = (rsrq - STATS["rsrq"]["mean"]) / STATS["rsrq"]["std"]
+        z_sinr = (sinr - STATS["sinr"]["mean"]) / STATS["sinr"]["std"]
+        z_dl   = (dl   - STATS["dl"]["mean"])   / STATS["dl"]["std"]
+
+        # Count how many KPIs are significantly below normal (Z < -1.5)
+        degraded = sum([
+            z_rsrp < -1.5,
+            z_rsrq < -1.5,
+            z_sinr < -1.5,
+            z_dl   < -1.5,
+        ])
+
+        # Weighted anomaly score
+        severity_score = (
+            max(0, -z_rsrp) * 0.35 +
+            max(0, -z_rsrq) * 0.25 +
+            max(0, -z_sinr) * 0.25 +
+            max(0, -z_dl)   * 0.15
+        )
+        score = min(1.0, severity_score / 4.0)  # normalize to 0-1
+        is_anomaly = degraded >= 2 or score > 0.4
+
+        return is_anomaly, round(float(score), 4)
+
+    # Try XGBoost first if available
+    use_xgb = False
+    xgb_model = None
+    scaler    = None
+    xgb_path  = DATA_DIR / "best_model.json"
     scaler_path = DATA_DIR / "scaler.pkl"
 
-    if not model_path.exists() or not scaler_path.exists():
-        raise HTTPException(status_code=503, detail="Model files not found in ml_data/")
+    if xgb_path.exists() and scaler_path.exists():
+        try:
+            import joblib, xgboost as xgb
+            scaler    = joblib.load(scaler_path)
+            xgb_model = xgb.XGBClassifier()
+            xgb_model.load_model(str(xgb_path))
+            use_xgb   = True
+            logger.info("predict: using XGBoost model")
+        except Exception as e:
+            logger.warning(f"XGBoost load failed, falling back to Z-score: {e}")
 
-    model  = joblib.load(model_path)
-    scaler = joblib.load(scaler_path)
-
-    # Build 15 features using dataset mean values as defaults for missing fields
-    # Means from Vienna LTE dataset (summary_stats.json)
-    RSRP_MEAN = -90.11; RSRQ_MEAN = -14.8; SINR_MEAN = 5.61; DL_MEAN = 34.54
-    def _build_row(r: AnomalyRecord) -> list:
-        rsrp  = r.rsrp_dbm           if r.rsrp_dbm           is not None else RSRP_MEAN
-        rsrq  = r.rsrq_db            if r.rsrq_db            is not None else RSRQ_MEAN
-        sinr  = r.sinr_db            if r.sinr_db            is not None else SINR_MEAN
-        dl    = r.dl_throughput_mbps if r.dl_throughput_mbps is not None else DL_MEAN
-        rssi  = rsrp + 22.0          # typical RSSI offset (Vienna mean: -68 dBm)
-        pl    = -(rsrp) + 20.0       # rough pathloss from RSRP
-        ul    = 0.22                 # dataset mean
-        ta    = 5.0                  # dataset mean timing advance
-        freq  = 2630000.0            # most common channel in Vienna
-        h     = 0.0                  # cell height (many unmatched = 0)
-        az    = 0.0                  # azimuth (many unmatched = 0)
-        sqi   = (rsrp+120)/60*0.4 + (rsrq+30)/30*0.3 + (sinr+10)/40*0.3
+    def _xgb_predict(r: AnomalyRecord):
+        rsrp = r.rsrp_dbm           if r.rsrp_dbm           is not None else -90.11
+        rsrq = r.rsrq_db            if r.rsrq_db            is not None else -14.8
+        sinr = r.sinr_db            if r.sinr_db            is not None else 5.61
+        dl   = r.dl_throughput_mbps if r.dl_throughput_mbps is not None else 34.54
+        rssi = rsrp + 22.0
+        pl   = -rsrp + 20.0
+        ul   = 0.22; ta = 5.0; freq = 2630000.0; h = 0.0; az = 0.0
+        sqi  = (rsrp+120)/60*0.4 + (rsrq+30)/30*0.3 + (sinr+10)/40*0.3
         ratio = dl / (ul + 0.001)
-        eff   = dl / (2850 + 1)
-        gap   = rsrp - rssi
-        return [rsrp, rsrq, rssi, sinr, pl, dl, ul, ta, freq, h, az, sqi, ratio, eff, gap]
+        eff  = dl / 2851.0
+        gap  = rsrp - rssi
+        X    = scaler.transform([[rsrp, rsrq, rssi, sinr, pl, dl, ul, ta, freq, h, az, sqi, ratio, eff, gap]])
+        pred  = int(xgb_model.predict(X)[0])
+        score = float(xgb_model.predict_proba(X)[0][1])
+        return bool(pred), round(score, 4)
 
     results = []
     for r in records:
         try:
-            row  = _build_row(r)
-            X    = scaler.transform([row])
-            pred = int(model.predict(X)[0])
-            score = float(model.predict_proba(X)[0][1]) if hasattr(model, "predict_proba") else float(pred)
+            if use_xgb:
+                is_anom, score = _xgb_predict(r)
+            else:
+                is_anom, score = _zscore_predict(r)
         except Exception as e:
-            logger.error(f"Inference failed for record {r.measurement_id}: {e}")
-            pred, score = 0, 0.0
-        sev = "critical" if score >= 0.8 else "high" if score >= 0.6 else "medium" if pred else "low"
-        results.append({"measurement_id": r.measurement_id, "is_anomaly": bool(pred), "ml_anomaly_score": round(score, 4), "severity": sev})
+            logger.error(f"Inference error for {r.measurement_id}: {e}")
+            is_anom, score = False, 0.0
+
+        sev = "critical" if score >= 0.75 else "high" if score >= 0.5 else "medium" if is_anom else "low"
+        results.append({
+            "measurement_id": r.measurement_id,
+            "is_anomaly":       is_anom,
+            "ml_anomaly_score": score,
+            "severity":         sev,
+        })
 
     anomalies = [
         AnomalyRecord(**{**r.__dict__, "severity": res["severity"], "ml_anomaly_score": res["ml_anomaly_score"]})
