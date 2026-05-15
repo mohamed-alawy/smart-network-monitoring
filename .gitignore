@@ -11,6 +11,9 @@ __pycache__/
 dist/
 build/
 mlruns/
-modules/rag/evaluation/ragas_results.json
-modules/rag/evaluation/sme_review.csv
 .worktrees/
+modules/ml/data/*.pkl
+modules/ml/data/*.json
+modules/ml/data/*.joblib
+modules/ml/data/best_model*
+modules/ml/data/scaler*
