@@ -591,18 +591,18 @@ async def query_general(request: GeneralQueryRequest):
 # ── Ingestion endpoint ────────────────────────────────────────────────────────
 
 @app.post("/ingest")
-async def ingest(request: IngestRequest, background_tasks: BackgroundTasks):
-    """Trigger document ingestion in the background."""
+async def ingest(background_tasks: BackgroundTasks, request: Optional[IngestRequest] = None):
+    """Trigger document ingestion in the background. Body is optional."""
+    req = request or IngestRequest()
     def _run():
-        specs_dir = Path(request.specs_dir)
+        specs_dir = Path(req.specs_dir)
         if specs_dir.exists():
             ingest_all_docs(specs_dir)
             ingest_all_yamls(specs_dir)
         else:
             logger.warning(f"Specs dir not found: {specs_dir}")
-
-        if request.vocabulary_docx:
-            vocab = Path(request.vocabulary_docx)
+        if req.vocabulary_docx:
+            vocab = Path(req.vocabulary_docx)
             if vocab.exists():
                 ingest_vocabulary_docx(vocab)
             else:
