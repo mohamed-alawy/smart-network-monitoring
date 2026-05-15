@@ -383,6 +383,20 @@ async function sendChat() {
   } catch(_){_upd(lid,'Cannot reach the RAG API.');}
 }
 function sendSuggestion(btn){document.getElementById('chat-input').value=btn.textContent;btn.remove();sendChat();}
+function _md(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/^#{1,3} (.+)$/gm,'<strong>$1</strong>')
+    .replace(/^\d+\. (.+)$/gm,'<div style="margin:2px 0;">• $1</div>')
+    .replace(/^[\*\-] (.+)$/gm,'<div style="margin:2px 0;">• $1</div>')
+    .replace(/\[(\d+)\]/g,'<sup style="color:var(--orange);font-size:.7em;">[$1]</sup>')
+    .replace(/\n\n/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+}
+
 function _msg(text, cls) {
   const id  = 'msg-' + Date.now();
   const el  = document.getElementById('chat-messages');
@@ -391,17 +405,24 @@ function _msg(text, cls) {
   div.id = id;
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble';
-  bubble.textContent = text;
+  if (cls.includes('user')) {
+    bubble.textContent = text;
+  } else {
+    bubble.innerHTML = _md(text);
+  }
   div.appendChild(bubble);
   el.appendChild(div);
   el.scrollTop = el.scrollHeight;
   return id;
 }
+
 function _upd(id, text) {
   const e = document.getElementById(id);
   if (!e) return;
   e.className = 'chat-msg assistant';
-  e.querySelector('.chat-bubble').textContent = text;
+  e.querySelector('.chat-bubble').innerHTML = _md(text);
+  const el = document.getElementById('chat-messages');
+  if (el) el.scrollTop = el.scrollHeight;
 }
 
 // ── DEMO ──────────────────────────────────────────────────────────
