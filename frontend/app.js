@@ -20,8 +20,12 @@ let currentFilter = 'all', uploadQueue = [];
 
 const API_BASE = (() => {
   const h = window.location.hostname;
-  if (h.includes('app.github.dev')) return window.location.origin.replace('-3000.','-8000.');
-  return window.location.origin + '/api';
+  // Codespaces — replace port 3000 with 8000 in the hostname
+  if (h.includes('app.github.dev')) {
+    return 'https://' + h.replace('-3000.', '-8000.');
+  }
+  // Local Docker — nginx proxies /api/ to rag_api:8000
+  return '/api';
 })();
 
 // ── REAL DATA ──────────────────────────────────────────────────────
