@@ -18,6 +18,7 @@ DATA_DIR = Path(os.getenv("ML_DATA_DIR", "/app/ml_data"))
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError
 from loguru import logger
 from dotenv import load_dotenv
@@ -73,6 +74,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve frontend static files — works in both Docker and Codespaces (no CORS)
+_frontend = Path(__file__).parent.parent.parent / "frontend"
+if _frontend.exists():
+    app.mount("/", StaticFiles(directory=str(_frontend), html=True), name="frontend")
 
 
 # ── Request / Response models ─────────────────────────────────────────────────

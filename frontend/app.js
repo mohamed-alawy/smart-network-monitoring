@@ -18,15 +18,8 @@ const RAG_FILES = [
 let REAL_SUMMARY = null, REAL_ANOMALIES = [], REAL_MODELS = null;
 let currentFilter = 'all', uploadQueue = [];
 
-const API_BASE = (() => {
-  const h = window.location.hostname;
-  // Codespaces — replace port 3000 with 8000 in the hostname
-  if (h.includes('app.github.dev')) {
-    return 'https://' + h.replace('-3000.', '-8000.');
-  }
-  // Local Docker — nginx proxies /api/ to rag_api:8000
-  return '/api';
-})();
+// Frontend served by FastAPI on same origin — no CORS needed
+const API_BASE = '';
 
 // ── REAL DATA ──────────────────────────────────────────────────────
 async function loadRealData() {
