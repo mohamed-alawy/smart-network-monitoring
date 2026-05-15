@@ -390,8 +390,26 @@ async function sendChat() {
   } catch(_){_upd(lid,'Cannot reach the RAG API.');}
 }
 function sendSuggestion(btn){document.getElementById('chat-input').value=btn.textContent;btn.remove();sendChat();}
-function _msg(text,cls){const id='msg-'+Date.now(),el=document.getElementById('chat-messages');el.innerHTML+='<div class="chat-msg '+cls+'" id="'+id+'"><div class="chat-bubble">'+text+'</div></div>';el.scrollTop=el.scrollHeight;return id;}
-function _upd(id,text){const e=document.getElementById(id);if(!e)return;e.className='chat-msg assistant';e.querySelector('.chat-bubble').textContent=text;}
+function _msg(text, cls) {
+  const id  = 'msg-' + Date.now();
+  const el  = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + cls;
+  div.id = id;
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble';
+  bubble.textContent = text;
+  div.appendChild(bubble);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  return id;
+}
+function _upd(id, text) {
+  const e = document.getElementById(id);
+  if (!e) return;
+  e.className = 'chat-msg assistant';
+  e.querySelector('.chat-bubble').textContent = text;
+}
 
 // ── DEMO ──────────────────────────────────────────────────────────
 const DEMO = {
