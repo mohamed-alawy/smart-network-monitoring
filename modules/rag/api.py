@@ -113,7 +113,7 @@ class AlertQueryRequest(BaseModel):
 
 
 class GeneralQueryRequest(BaseModel):
-    query: str = Field(..., min_length=5, description="Natural language question")
+    query: str = Field(..., min_length=1, description="Natural language question")
 
 
 class NotificationResult(BaseModel):
@@ -517,7 +517,7 @@ async def data_dispatch():
 
 @app.post("/query/general")
 async def query_general(request: GeneralQueryRequest):
-    """Free-text query for network engineers — no notifications."""
+    """Free-text query — no notifications, English only."""
     chain = get_chain()
     try:
         answer = chain.invoke({"query": request.query})

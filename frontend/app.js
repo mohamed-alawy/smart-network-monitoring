@@ -114,24 +114,20 @@ function _applyRealDataToDashboard() {
   if (!REAL_SUMMARY) return;
   const s = REAL_SUMMARY;
 
-  // KPI cards
   _setText('val-throughput', `${s.dl_throughput_stats.mean.toFixed(1)}<span class="unit">Mbps</span>`);
-  _setText('val-latency',    `${Math.abs(s.rsrp_stats.mean).toFixed(0)}<span class="unit">dBm</span>`);
+  _setText('val-latency',    `${s.rsrp_stats.mean.toFixed(1)}<span class="unit">dBm</span>`);
   _setText('val-loss',       `${s.anomaly_rate.toFixed(2)}<span class="unit">%</span>`);
   _setText('val-alerts',     `<span class="glow">${s.anomaly_count}</span>`);
 
-  // delta labels
-  _setText('delta-throughput', `↑ max ${s.dl_throughput_stats.max} Mbps`);
-  _setText('delta-latency',    `RSRP mean ${s.rsrp_stats.mean.toFixed(1)} dBm`);
-  _setText('delta-loss',       `${s.anomaly_count} / ${s.total_measurements} measurements`);
+  _setText('delta-throughput', `max ${s.dl_throughput_stats.max} Mbps`);
+  _setText('delta-latency',    `min ${s.rsrp_stats.min} / max ${s.rsrp_stats.max} dBm`);
+  _setText('delta-loss',       `${s.anomaly_count} of ${s.total_measurements} measurements`);
 
-  // Signal quality gauges (RSRP, RSRQ, SINR)
   _updateGauge('gauge-rsrp', s.rsrp_stats.mean, -130, -60, 'var(--green)');
-  _updateGauge('gauge-rsrq', s.rsrq_stats.mean, -25, -5,  'var(--yellow)');
-  _updateGauge('gauge-sinr', s.sinr_stats.mean,  -15, 30,  'var(--orange)');
+  _updateGauge('gauge-rsrq', s.rsrq_stats.mean, -25, -5,   'var(--yellow)');
+  _updateGauge('gauge-sinr', s.sinr_stats.mean, -15, 30,   'var(--orange)');
 
-  // Severity progress bars
-  const total = s.anomaly_count;
+  const total = s.anomaly_count || 1;
   _setWidth('bar-critical', (s.severity_distribution.critical / total * 100).toFixed(0));
   _setWidth('bar-high',     (s.severity_distribution.high     / total * 100).toFixed(0));
   _setWidth('bar-medium',   (s.severity_distribution.medium   / total * 100).toFixed(0));
@@ -139,7 +135,6 @@ function _applyRealDataToDashboard() {
   _setText('lbl-high',      `${s.severity_distribution.high}`);
   _setText('lbl-medium',    `${s.severity_distribution.medium}`);
 
-  // Main chart — dl_throughput over time from anomalies
   drawRealChart();
   drawAnomalyTypesChart();
   drawAreaChart();
@@ -215,19 +210,95 @@ function _updateGauge(id, val, min, max, color) {
 }
 
 // ── REAL CHARTS ──────────────────────────────────────────────────────
+// live ticker — pushes a new point every second
+let _chartBuffer = [];
+let _chartTicker = null;
+let _currentChartRange = '1H';
+
 function drawRealChart(range = '1H') {
+  _currentChartRange = range;
   const svg = document.getElementById('main-chart');
   if (!svg) return;
 
-  let pts;
-  if (REAL_ANOMALIES.length > 0) {
-    // بنعرض الـ ml_anomaly_score × 100 على الزمن
-    const sorted = [...REAL_ANOMALIES].sort((a,b) => new Date(a.time) - new Date(b.time));
-    const take = range === '1H' ? 60 : range === '6H' ? 120 : sorted.length;
-    pts = sorted.slice(-take).map(r => r.ml_anomaly_score * 100);
-  } else {
-    pts = generatePoints(60, 400, 1000, 80);
+  if (REAL_ANOMALIES.length > 0 && _chartBuffer.length === 0) {
+    const sorted = [...REAL_ANOMALIES].sort((a, b) => new Date(a.time) - new Date(b.time));
+    _chartBuffer = sorted.map(r => r.ml_anomaly_score * 100);
   }
+
+  const take = range === '1H' ? 60 : range === '6H' ? 120 : _chartBuffer.length || 60;
+  const pts  = (_chartBuffer.length ? _chartBuffer : Array.from({length: 60}, () => Math.random() * 20)).slice(-take);
+  _renderChart(svg, pts);
+}
+
+function _renderChart(svg, pts) {
+  const W = 600, H = 200;
+  const PAD = { top: 10, right: 10, bottom: 32, left: 48 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+  const xS = i => PAD.left + (i / (pts.length - 1 || 1)) * cW;
+  const yS = v => PAD.top  + cH - (v / 100) * cH;
+
+  const coords = pts.map((v, i) => [xS(i), yS(v)]);
+  const line   = coords.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
+  const area   = line + ` L${xS(pts.length-1)},${PAD.top+cH} L${PAD.left},${PAD.top+cH} Z`;
+
+  let yLines = '', yLabels = '';
+  [0, 25, 50, 75, 100].forEach(v => {
+    const y = yS(v);
+    yLines  += `<line x1="${PAD.left}" y1="${y}" x2="${PAD.left+cW}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"/>`;
+    yLabels += `<text x="${PAD.left-6}" y="${y+4}" text-anchor="end" fill="var(--text-2)" font-size="9" font-family="IBM Plex Mono">${v}</text>`;
+  });
+
+  const step = Math.max(1, Math.floor(pts.length / 6));
+  let xLabels = '';
+  for (let i = 0; i < pts.length; i += step)
+    xLabels += `<text x="${xS(i)}" y="${H-8}" text-anchor="middle" fill="var(--text-2)" font-size="9" font-family="IBM Plex Mono">${i}</text>`;
+  xLabels += `<text x="${xS(pts.length-1)}" y="${H-8}" text-anchor="middle" fill="var(--orange)" font-size="9" font-family="IBM Plex Mono">now</text>`;
+
+  let zones = '', inZone = false, zoneStart = 0;
+  pts.forEach((v, i) => {
+    if (v > 50 && !inZone) { inZone = true; zoneStart = i; }
+    else if (v <= 50 && inZone) {
+      zones += `<rect x="${xS(zoneStart)}" y="${PAD.top}" width="${xS(i)-xS(zoneStart)}" height="${cH}" fill="rgba(232,69,10,0.08)"/>`;
+      inZone = false;
+    }
+  });
+
+  svg.innerHTML = `
+    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--orange)" stop-opacity=".2"/>
+      <stop offset="100%" stop-color="var(--orange)" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${yLines}${zones}
+    <path d="${area}" fill="url(#ag)"/>
+    <path d="${line}" fill="none" stroke="var(--orange)" stroke-width="1.8" stroke-linejoin="round"/>
+    <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top+cH}" stroke="var(--border-lit)" stroke-width="1"/>
+    <line x1="${PAD.left}" y1="${PAD.top+cH}" x2="${PAD.left+cW}" y2="${PAD.top+cH}" stroke="var(--border-lit)" stroke-width="1"/>
+    ${yLabels}${xLabels}
+    <text x="${PAD.left+cW/2}" y="${PAD.top+8}" text-anchor="middle" fill="var(--text-2)" font-size="8" font-family="IBM Plex Mono">Anomaly Score %</text>`;
+}
+
+function _startChartTicker() {
+  if (_chartTicker) clearInterval(_chartTicker);
+  _chartTicker = setInterval(() => {
+    const svg = document.getElementById('main-chart');
+    if (!svg) return;
+    const last = _chartBuffer.length ? _chartBuffer[_chartBuffer.length - 1] : 10;
+    const next = Math.max(0, Math.min(100, last + (Math.random() - 0.48) * 5));
+    _chartBuffer.push(next);
+    if (_chartBuffer.length > 500) _chartBuffer.shift();
+    const take = _currentChartRange === '1H' ? 60 : _currentChartRange === '6H' ? 120 : _chartBuffer.length;
+    _renderChart(svg, _chartBuffer.slice(-take));
+  }, 1000);
+}
+
+function setChartRange(range, btn) {
+  _currentChartRange = range;
+  document.querySelectorAll('.chart-time-btn').forEach(b => { b.style.color = ''; b.style.borderColor = ''; });
+  btn.style.color = 'var(--orange)';
+  btn.style.borderColor = 'var(--orange)';
+  drawRealChart(range);
+}
 
   const W = 600, H = 200;
   const PAD = { top: 10, right: 10, bottom: 32, left: 44 };
@@ -359,18 +430,6 @@ function drawFeatureImportanceChart() {
   svg.setAttribute('height', totalH);
   svg.innerHTML = bars;
 }
-
-// chart time range buttons
-function setChartRange(range, btn) {
-  document.querySelectorAll('.chart-time-btn').forEach(b => {
-    b.className = 'btn btn-ghost btn-sm';
-  });
-  btn.className = 'btn btn-ghost btn-sm';
-  btn.style.color = 'var(--orange)';
-  btn.style.borderColor = 'var(--orange)';
-  drawRealChart(range);
-}
-
 
 // ── CLOCK ──────────────────────────────────────────────────────────
 function updateClock() {
@@ -866,7 +925,7 @@ async function sendChat() {
   document.getElementById('chat-suggestions').style.display = 'none';
 
   _appendMsg(q, 'user');
-  const loadingId = _appendMsg('...', 'assistant loading');
+  const loadingId = _appendMsg('Thinking...', 'assistant loading');
 
   try {
     const res = await fetch(`${API_BASE}/query/general`, {
@@ -874,15 +933,21 @@ async function sendChat() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: q }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      _updateMsg(loadingId, `Error: ${err.detail || res.status}`);
+      return;
+    }
     const data = await res.json();
     _updateMsg(loadingId, data.answer || 'No response from RAG.');
   } catch (_) {
-    _updateMsg(loadingId, 'Could not reach the RAG API. Make sure the backend is running.');
+    _updateMsg(loadingId, 'Cannot reach the RAG API. Make sure the backend is running.');
   }
 }
 
 function sendSuggestion(btn) {
   document.getElementById('chat-input').value = btn.textContent;
+  btn.closest('.suggestion-chip')?.remove();
   btn.remove();
   sendChat();
 }
@@ -941,7 +1006,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderAlerts(document.getElementById('alerts-list'), ALERTS);
   renderRagFiles();
 
-  // load real data — replaces demo when API ready
   loadRealData();
   loadConfig();
+  _startChartTicker();
 });
