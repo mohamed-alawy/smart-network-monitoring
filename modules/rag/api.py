@@ -445,10 +445,10 @@ async def predict(records: List[AnomalyRecord]):
 
     # Vienna dataset statistics (from summary_stats.json)
     STATS = {
-        "rsrp": {"mean": -90.11, "std": 9.5},
-        "rsrq": {"mean": -14.8,  "std": 3.2},
-        "sinr": {"mean":   5.61, "std": 6.8},
-        "dl":   {"mean":  34.54, "std": 28.0},
+        "rsrp": {"mean": -90.11, "std": 9.5,  "bad": -100.0},
+        "rsrq": {"mean": -14.8,  "std": 3.2,  "bad":  -17.0},
+        "sinr": {"mean":   5.61, "std": 6.8,  "bad":    0.0},
+        "dl":   {"mean":  34.54, "std": 28.0, "bad":   10.0},
     }
 
     def _zscore_predict(r: AnomalyRecord):
@@ -457,29 +457,21 @@ async def predict(records: List[AnomalyRecord]):
         sinr = r.sinr_db            if r.sinr_db            is not None else STATS["sinr"]["mean"]
         dl   = r.dl_throughput_mbps if r.dl_throughput_mbps is not None else STATS["dl"]["mean"]
 
-        z_rsrp = (rsrp - STATS["rsrp"]["mean"]) / STATS["rsrp"]["std"]
-        z_rsrq = (rsrq - STATS["rsrq"]["mean"]) / STATS["rsrq"]["std"]
-        z_sinr = (sinr - STATS["sinr"]["mean"]) / STATS["sinr"]["std"]
-        z_dl   = (dl   - STATS["dl"]["mean"])   / STATS["dl"]["std"]
-
-        # Severity contribution per metric (threshold at -1.0 std)
-        def metric_score(z, threshold=-1.0):
-            if z >= threshold:
+        # Score based on how far below the "bad" threshold each metric is
+        def metric_score(val, bad, mean):
+            if val >= bad:
                 return 0.0
-            return min(1.0, (threshold - z) / 2.5)  # 0→1 as z goes from -1.0 to -3.5
+            span = abs(mean - bad) + 1e-6
+            return min(1.0, (bad - val) / span)
 
-        s_rsrp = metric_score(z_rsrp)
-        s_rsrq = metric_score(z_rsrq)
-        s_sinr = metric_score(z_sinr)
-        s_dl   = metric_score(z_dl)
+        s_rsrp = metric_score(rsrp, STATS["rsrp"]["bad"], STATS["rsrp"]["mean"])
+        s_rsrq = metric_score(rsrq, STATS["rsrq"]["bad"], STATS["rsrq"]["mean"])
+        s_sinr = metric_score(sinr, STATS["sinr"]["bad"], STATS["sinr"]["mean"])
+        s_dl   = metric_score(dl,   STATS["dl"]["bad"],   STATS["dl"]["mean"])
 
         degraded = sum([s_rsrp > 0, s_rsrq > 0, s_sinr > 0, s_dl > 0])
-
-        # Weighted score
-        score = min(1.0, s_rsrp * 0.35 + s_rsrq * 0.30 + s_sinr * 0.25 + s_dl * 0.10)
-
-        # Anomaly if score > 0.1 or 2+ metrics degraded
-        is_anomaly = score > 0.1 or degraded >= 2
+        score    = min(1.0, s_rsrp * 0.35 + s_rsrq * 0.30 + s_sinr * 0.25 + s_dl * 0.10)
+        is_anomaly = score > 0.05 or degraded >= 2
 
         return is_anomaly, round(float(score), 4)
 
