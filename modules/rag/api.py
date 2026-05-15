@@ -75,11 +75,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve frontend static files — works in both Docker and Codespaces (no CORS)
-_frontend = Path(__file__).parent.parent.parent / "frontend"
-if _frontend.exists():
-    app.mount("/", StaticFiles(directory=str(_frontend), html=True), name="frontend")
-
 
 # ── Request / Response models ─────────────────────────────────────────────────
 
@@ -555,4 +550,10 @@ async def ingest(request: IngestRequest, background_tasks: BackgroundTasks):
 
     background_tasks.add_task(_run)
     return {"status": "ingestion started in background"}
+
+
+# Mount frontend LAST so API routes take priority
+_frontend = Path(__file__).parent.parent.parent / "frontend"
+if _frontend.exists():
+    app.mount("/", StaticFiles(directory=str(_frontend), html=True), name="frontend")
 
