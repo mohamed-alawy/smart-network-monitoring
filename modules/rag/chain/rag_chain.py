@@ -1,21 +1,9 @@
-"""
-LangChain LCEL RAG chain with RunnableBranch routing.
-
-Query types:
-    - alert_query: input is a structured network alert event
-  - general_query: free-text troubleshooting question from engineer
-
-Both routes retrieve from Weaviate and pass context to the LLM.
-"""
-
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableBranch, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 
 from modules.rag.vector_store.retriever import hybrid_search
 from modules.rag.chain.llm_provider import get_llm
-
-# ── Prompts ───────────────────────────────────────────────────────────────────
 
 ALERT_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are a senior telecom network engineer AI assistant.
@@ -37,16 +25,12 @@ Context from knowledge base:
 Provide a structured response in the following JSON format:
 {{
     "cause_explanation": "Technical explanation of why this alert condition is occurring",
-  "priority": "critical | high | medium | low",
-  "estimated_resolution_time": "e.g. 2-4 hours",
-  "suggested_solution": [
-    "Step 1: ...",
-    "Step 2: ...",
-    "Step 3: ..."
-  ],
-  "affected_standards": ["e.g. TS 28.552 Section 5.1"],
-  "escalation_needed": true or false,
-  "additional_notes": "Any important warnings or considerations"
+    "priority": "critical | high | medium | low",
+    "estimated_resolution_time": "e.g. 2-4 hours",
+    "suggested_solution": ["Step 1: ...", "Step 2: ...", "Step 3: ..."],
+    "affected_standards": ["e.g. TS 28.552 Section 5.1"],
+    "escalation_needed": true or false,
+    "additional_notes": "Any important warnings or considerations"
 }}"""),
 ])
 
@@ -61,7 +45,6 @@ Context:
     ("human", "{query}"),
 ])
 
-# ── Retrieval helpers ─────────────────────────────────────────────────────────
 
 def _format_docs(docs) -> str:
     if not docs:
@@ -78,7 +61,7 @@ def _format_docs(docs) -> str:
 def _retrieve_for_alert(inputs: dict) -> dict:
     symptoms = inputs.get("symptoms", [])
     if isinstance(symptoms, str):
-        symptoms = [part.strip() for part in symptoms.split(",") if part.strip()]
+        symptoms = [p.strip() for p in symptoms.split(",") if p.strip()]
 
     query = " ".join([
         str(inputs.get("root_cause", "")),
@@ -100,15 +83,10 @@ def _retrieve_for_general(inputs: dict) -> dict:
     return inputs
 
 
-# ── Route classifier ──────────────────────────────────────────────────────────
-
 def _is_alert_input(inputs: dict) -> bool:
-    """True if input follows the network alert event schema."""
     required = ("timestamp", "location", "severity", "root_cause", "symptoms")
     return all(field in inputs for field in required)
 
-
-# ── Chain assembly ────────────────────────────────────────────────────────────
 
 def build_rag_chain():
     llm = get_llm()
@@ -127,15 +105,12 @@ def build_rag_chain():
         | StrOutputParser()
     )
 
-    chain = RunnableBranch(
+    return RunnableBranch(
         (_is_alert_input, alert_chain),
-        general_chain,  # default branch
+        general_chain,
     )
 
-    return chain
 
-
-# Singleton chain instance
 _chain = None
 
 

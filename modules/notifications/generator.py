@@ -8,9 +8,9 @@ from modules.notifications.templates.message_templates import (
 
 _RECIPIENT_MAP = {
     "critical": ["engineer", "call_center", "client"],
-    "high": ["engineer", "call_center", "client"],
-    "medium": ["call_center"],
-    "low": [],
+    "high":     ["engineer", "call_center", "client"],
+    "medium":   ["call_center"],
+    "low":      [],
 }
 
 _CLIENT_PROMPT = (
@@ -21,26 +21,18 @@ _CLIENT_PROMPT = (
 )
 
 
-def get_llm():
-    from modules.rag.chain.llm_provider import get_llm as _get_llm
-    return _get_llm()
-
-
 def get_recipients(priority: str) -> list[str]:
     result = _RECIPIENT_MAP.get(priority.lower())
     if result is None:
-        logger.warning(f"Unknown priority '{priority}', no recipients will be notified")
+        logger.warning(f"Unknown priority '{priority}'")
         return []
     return result
 
 
 def _llm_client_message(location: str, rag: dict) -> str:
-    llm = get_llm()
-    prompt = _CLIENT_PROMPT.format(
-        location=location,
-        eta=rag["estimated_resolution_time"],
-    )
-    return llm.invoke(prompt).content
+    from modules.rag.chain.llm_provider import get_llm
+    prompt = _CLIENT_PROMPT.format(location=location, eta=rag["estimated_resolution_time"])
+    return get_llm().invoke(prompt).content
 
 
 def generate_messages(location: str, rag_output: dict, recipients: list[str]) -> dict[str, str]:
@@ -57,7 +49,7 @@ def generate_messages(location: str, rag_output: dict, recipients: list[str]) ->
                 try:
                     messages["client"] = _llm_client_message(location, rag_output)
                 except Exception as e:
-                    logger.warning(f"LLM client message failed, falling back to template: {e}")
+                    logger.warning(f"LLM client message failed, using template: {e}")
                     messages["client"] = client_message_template(location, rag_output)
             else:
                 messages["client"] = client_message_template(location, rag_output)

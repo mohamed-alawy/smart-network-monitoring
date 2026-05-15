@@ -1,8 +1,3 @@
-"""
-Ingestion pipeline for 3GPP YAML spec files (OpenAPI/management service definitions).
-Converts YAML structure to readable text chunks and ingests into Weaviate.
-"""
-
 import os
 from pathlib import Path
 from typing import List
@@ -14,7 +9,7 @@ from tqdm import tqdm
 from modules.rag.vector_store.schema import get_client, COLLECTION_NAME
 from modules.rag.vector_store.retriever import embed
 
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "512"))
+CHUNK_SIZE    = int(os.getenv("CHUNK_SIZE", "512"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "64"))
 
 SPEC_ID_MAP = {
@@ -31,30 +26,21 @@ def _detect_spec_id(filename: str) -> str:
     return "UNKNOWN"
 
 
-def _yaml_to_text_chunks(data: dict, source: str) -> List[dict]:
-    """
-    Convert YAML structure into readable text blocks.
-    Each API path, schema definition, or description becomes its own chunk.
-    """
+def _yaml_to_text_chunks(data: dict) -> List[dict]:
     chunks = []
 
-    # Top-level info block
     info = data.get("info", {})
     if info:
         text = f"Specification: {info.get('title', '')}\nVersion: {info.get('version', '')}\nDescription: {info.get('description', '')}"
         chunks.append({"text": text.strip(), "section": "info"})
 
-    # API paths
     for path, methods in (data.get("paths") or {}).items():
         for method, details in methods.items():
             if not isinstance(details, dict):
                 continue
-            summary = details.get("summary", "")
-            description = details.get("description", "")
-            text = f"Endpoint: {method.upper()} {path}\nSummary: {summary}\nDescription: {description}"
+            text = f"Endpoint: {method.upper()} {path}\nSummary: {details.get('summary', '')}\nDescription: {details.get('description', '')}"
             chunks.append({"text": text.strip(), "section": f"path:{path}"})
 
-    # Component schemas
     schemas = (data.get("components") or {}).get("schemas") or {}
     for schema_name, schema_def in schemas.items():
         if not isinstance(schema_def, dict):
@@ -64,8 +50,7 @@ def _yaml_to_text_chunks(data: dict, source: str) -> List[dict]:
         for prop_name, prop_def in props.items():
             if isinstance(prop_def, dict):
                 prop_type = prop_def.get("type", prop_def.get("$ref", ""))
-                prop_desc = prop_def.get("description", "")
-                prop_lines.append(f"  - {prop_name} ({prop_type}): {prop_desc}")
+                prop_lines.append(f"  - {prop_name} ({prop_type}): {prop_def.get('description', '')}")
         text = f"Schema: {schema_name}\nDescription: {schema_def.get('description', '')}\nProperties:\n" + "\n".join(prop_lines)
         chunks.append({"text": text.strip(), "section": f"schema:{schema_name}"})
 
@@ -73,53 +58,41 @@ def _yaml_to_text_chunks(data: dict, source: str) -> List[dict]:
 
 
 def ingest_yaml(yaml_path: str | Path) -> int:
-    """
-    Ingest a single YAML spec file into Weaviate.
-    Returns number of chunks inserted.
-    """
     yaml_path = Path(yaml_path)
     if not yaml_path.exists():
         raise FileNotFoundError(f"YAML not found: {yaml_path}")
 
     spec_id = _detect_spec_id(yaml_path.name)
-    source = yaml_path.name
-    logger.info(f"Ingesting {source} (spec: {spec_id})")
+    logger.info(f"Ingesting {yaml_path.name} (spec: {spec_id})")
 
     with open(yaml_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     if not data:
-        logger.warning(f"Empty or invalid YAML: {source}")
+        logger.warning(f"Empty YAML: {yaml_path.name}")
         return 0
 
-    text_chunks = _yaml_to_text_chunks(data, source)
-
+    text_chunks = _yaml_to_text_chunks(data)
     inserted = 0
     with get_client() as client:
         collection = client.collections.get(COLLECTION_NAME)
         with collection.batch.dynamic() as batch:
-            for i, chunk in enumerate(tqdm(text_chunks, desc=f"Embedding {source}", unit="chunk")):
-                vector = embed(chunk["text"])
+            for i, chunk in enumerate(tqdm(text_chunks, desc=f"Embedding {yaml_path.name}", unit="chunk")):
                 batch.add_object(
                     properties={
-                        "text": chunk["text"],
-                        "source": source,
-                        "doc_type": "yaml",
-                        "spec_id": spec_id,
-                        "page_number": 0,
-                        "chunk_index": i,
-                        "section": chunk["section"],
+                        "text": chunk["text"], "source": yaml_path.name,
+                        "doc_type": "yaml", "spec_id": spec_id,
+                        "page_number": 0, "chunk_index": i, "section": chunk["section"],
                     },
-                    vector=vector,
+                    vector=embed(chunk["text"]),
                 )
                 inserted += 1
 
-    logger.success(f"Inserted {inserted} chunks from {source}")
+    logger.success(f"Inserted {inserted} chunks from {yaml_path.name}")
     return inserted
 
 
 def ingest_all_yamls(yaml_dir: str | Path) -> None:
-    """Ingest all .yaml files in the given directory."""
     yaml_dir = Path(yaml_dir)
     yamls = list(yaml_dir.glob("*.yaml"))
     if not yamls:
@@ -130,7 +103,3 @@ def ingest_all_yamls(yaml_dir: str | Path) -> None:
             ingest_yaml(yml)
         except Exception as e:
             logger.error(f"Failed to ingest {yml.name}: {e}")
-
-
-if __name__ == "__main__":
-    ingest_all_yamls("data/raw/3gpp_specs")
