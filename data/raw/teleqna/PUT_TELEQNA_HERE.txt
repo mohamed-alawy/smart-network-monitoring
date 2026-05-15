@@ -1,0 +1,3 @@
+# Auto-generated placeholder — put TeleQnA.json here
+# Required file:
+#   - TeleQnA.json (from https://github.com/netop-team/TeleQnA — password: teleqnadataset)

@@ -1,0 +1,3 @@
+# Auto-generated placeholder — put your Telecom Complaints CSV here
+# Required file:
+#   - complaints.csv (from Kaggle: https://www.kaggle.com/datasets/aditya6196/telecom-consumer-complaints)
